@@ -1,4 +1,4 @@
-# phpfm
+# phpFileManager
 PHP Filesystem Management Tool
 http://www.dulldusk.com/phpfm/
 
