@@ -1,5 +1,4 @@
-# phpFileManager
-PHP Filesystem Management Tool
+# PHP Filesystem Management Tool
 http://www.dulldusk.com/phpfm/
 
 phpFileManager is a complete filesystem management tool on a single file.
