@@ -25,7 +25,6 @@ under the terms of the terms of any of the following licenses at your choice:
 . GNU Lesser General Public License Version 2.1 or later (the "LGPL");
 . Mozilla Public License Version 1.1 or later (the "MPL"). 
 
-
 Is it secure?
 Short answer. YES! phpFileManager is secure, but you must set a password on it.
 The script can be renamed and deployed on an unique known url, that helps you keep it hidden.
