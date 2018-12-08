@@ -1,5 +1,5 @@
 # PHP Filesystem Management Tool
-http://phpfm.sourceforge.net
+https://sourceforge.net/projects/phpfm/
 
 phpFileManager is a complete filesystem management tool on a single file.
 This is a tool meant for rapid file access, and also to verify the server php configuration and security.
