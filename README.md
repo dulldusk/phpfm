@@ -15,7 +15,7 @@ This is a tool meant for rapid file access, and also to verify the server php co
 - password protection
 - works on linux/mac/windows
 - php4/php5/php6/php7 compatible
-- translations included for english/portuguese/spanish/catalan/chinese/dutch/french/german/italian/korean/russian/polish/turkish
+- translations included for english/portuguese/spanish/catalan/chinese/dutch/french/german/italian/korean/russian/polish/turkish/ukrainian
 
 ## License:
 phpFileManager is free software; you can redistribute it and/or modify it
