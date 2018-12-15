@@ -1,5 +1,5 @@
 <?php
-//{"lang":"","auth_pass":"d41d8cd98f00b204e9800998ecf8427e","error_reporting":"1"}
+
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
@@ -721,13 +721,150 @@ function lowercase($str){
 // | Interface
 // +--------------------------------------------------
 function html_header($header=""){
-    global $charset,$fm_color;
+    global $charset,$fm_color, $fm_path_info;
     echo "
     <!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
     <html xmlns=\"http://www.w3.org/1999/xhtml\">
     <head>
     <meta http-equiv=\"content-type\" content=\"text/html; charset=".$charset."\" />
     <title>...:::: ".et('FileMan')."</title>
+    <style>
+        .fm-title { margin: 0; font-weight: 500; line-height: 1.2; font-size: 1.5rem; }
+        .float-left { float: left }
+        .float-right { float: right }
+        .btn {
+            display: inline-block;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none;
+            padding: .1rem .2rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        i.bdc-link {
+            font-style: normal;
+            padding: 0 1px;
+        }
+        .fm-disk-info span {
+            padding: .1em 0.4em;
+            font-weight: 700;
+            border: 1px solid #adaeaf;
+        }
+        .table {
+            width: 100%;
+            margin-bottom: 1rem;
+            border-collapse: collapse;
+        }
+        .table .thead-light th {
+            color: #495057;
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+            vertical-align: bottom;
+            border-bottom: 2px solid #dee2e6;
+            border-bottom-width: 2px;
+        }
+        .table td, .table th {
+            padding: .3rem;
+            border: 1px solid #dee2e6;
+        }
+        .table th { text-align: left;}
+        .form-signin {
+            max-width: 380px;
+            padding: 15px 35px 45px;
+            margin: 0 auto;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,0.1);  
+         }
+        .form-signin-heading, .checkbox {
+            margin-bottom: 30px;
+        }
+        .form-signin input[type=\"password\"] {
+            margin-bottom: 20px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            max-width: 70%;
+        }
+        .form-signin .login-btn {
+            color: #fff;
+            background-color: #218838;
+            border-color: #1e7e34;
+            padding: .5rem 1rem;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            font-weight: 400;
+            text-align: center;
+            cursor: pointer;
+            border-style: solid;
+        }
+        .alert {
+            position: relative;
+            padding: .75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: .25rem;
+        }
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .form-control {
+            display: block;
+            width: 100%;
+            height: calc(2.25rem + 2px);
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #495057;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        }
+        .mt-3 { margin-top: 1rem!important; }
+        .mt-5 { margin-top: 3rem!important; }
+        .fa {
+            background:url('" . $fm_path_info["basename"] . "?action=99&filename=file_sprite.png') 0 0 no-repeat;
+            width: 18px;height: 18px;line-height: 18px;display:inline-block;vertical-align: text-bottom;    
+        }
+        .fa.fa-code { background-position: -126px 0; }
+        .fa.fa-code-o { background-position: -143px 0; }
+        .fa.fa-php { background-position: -108px -18px; }
+        .fa.fa-picture { background-position: -125px -18px; }
+        .fa.fa-file-text-o { background-position: -254px -18px; }
+        .fa-file-archive-o { background-position: -180px 0; }
+        .fa.fa-html { background-position: -434px -18px; }
+        .fa.fa-file-excel-o { background-position: -361px 0; }
+        .fa.fa-music { background-position: -108px 0; }
+        .fa.fa-video { background-position: -90px 0; }
+        .fa.fa-video { background-position: -90px 0; }
+        .fa.fa-file-aspx { background-position: -236px 0; }
+        .fa.fa-database { background-position: -272px 0; }
+        .fa.fa-file-word { background-position: -361px -18px; }
+        .fa.fa-file-powerpoint { background-position: -144px -18px; }
+        .fa.fa-font { background-position: -415px 0; }
+        .fa.file-pdf { background-position: -18px 0; }
+        .fa.file-image-o { background-position: -398px 0; }
+        .fa.fa-settings { background-position: -398px -18px; }
+        .fa.fa-lunix { background-position: -290px -18px; }
+        .fa.fa-folder { background-position: -506px -18px; }
+        .fa.fa-add-file { background-position: -54px 0; }
+        .fa.fa-upload { background-position: -453px 0; }
+        .fa.fa-file-go { background-position: -470px 0; }
+        .fa.fa-find { background-position: -380px 0; } 
+        .fa.fa-file-light { background-position: -470px -18px; } 
+        .fa.fa-file-remove { background-position: -290px 0; } 
+        .fa.fa-file-config { background-position: -308px 0; }
+        .fa.fa-copy { background-position: -198px 0; }
+        .fa.fa-copy-o { background-position: -198px -18px; }
+        .fa.fa-edit { background-position: -326px 0; }
+        .fa.fa-rename { background-position: -454px -18px; }
+        .fa.fa-glob { background-position: -380px -18px; }
+        .fa.fa-vs { background-position: -326px -18px; }
+        .fa.fa-search { background-position: 0 -18px; }
+    </style>
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
         function Is(){
@@ -1339,7 +1476,7 @@ function dir_list_form() {
         }
     -->
     </script>
-    <table border=0 cellspacing=1 cellpadding=4 width=\"100%\" bgcolor=\"#eeeeee\">\n";
+    <table class=\"table\">\n";
     if ($opdir = @opendir(fs_encode($fm_current_dir))) {
         $has_files = false;
         $entry_count = 0;
@@ -1601,10 +1738,12 @@ function dir_list_form() {
             }
             if (Butt.value == '".et('SelAll')."'){
                 for(var i=0;i<2;i++){
+                    document.getElementById('ANI'+i).innerHTML='<i class=\"fa fa-copy-o\"></i>" . et('SelNone') . "';
                     document.getElementById('ANI'+i).value='".et('SelNone')."';
                 }
             } else if (Butt.value == '".et('SelNone')."'){
                 for(var i=0;i<2;i++){
+                    document.getElementById('ANI'+i).innerHTML='<i class=\"fa fa-copy-o\"></i>" . et('SelAll') . "';
                     document.getElementById('ANI'+i).value='".et('SelAll')."';
                 }
             }
@@ -1780,17 +1919,20 @@ function dir_list_form() {
         //-->
         </script>";
         $out .= "
-            <tr>
+            <tr style=\"border-bottom: 2px solid #eaeaea;\">
             <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
-            <form style=\"display:inline-block;\" action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
-                <input type=button onclick=\"config_form()\" value=\"".et('Config')."\">
-                <input type=button onclick=\"server_info_form()\" value=\"".et('ServerInfo')."\">
-                <input type=button onclick=\"test_prompt(1)\" value=\"".et('CreateDir')."\">
-                <input type=button onclick=\"test_prompt(2)\" value=\"".et('CreateArq')."\">
-                <input type=button onclick=\"upload_form()\" value=\"".et('Upload')."\">
-                <input type=button onclick=\"shell_form()\" value=\"".et('Shell')."\">
-                <input type=button onclick=\"portscan_form()\" value=\"".et('Portscan')."\">
-                <input type=button onclick=\"about_form()\" value=\"".et('About')."\">
+            <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
+                <div class=\"float-left\"><h1 class=\"fm-title\">".et('FileMan')."</h1></div>
+                <div class=\"float-right\">
+                    <button class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
+                    <button class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
+                    <button type=button class=\"btn\" onclick=\"test_prompt(1)\" value=\"" . et('CreateDir') . "\"> <i class=\"fa fa-folder\"></i> ".et('CreateDir')."</button>
+                    <button type=button class=\"btn\" onclick=\"test_prompt(2)\" value=\"" . et('CreateArq') . "\"> <i class=\"fa fa-add-file\"></i> ".et('CreateArq')."</button>
+                    <button class=\"btn\" onclick=\"upload_form()\" value=\"" . et('Upload') . "\"><i class=\"fa fa-upload\"></i> " . et('Upload') . "</button>
+                    <button class=\"btn\" onclick=\"shell_form()\" value=\"" . et('Shell') . "\"><i class=\"fa fa-file-go\"></i> " . et('Shell') . "</button>
+                    <button class=\"btn\" onclick=\"portscan_form()\" value=\"" . et('Portscan') . "\"><i class=\"fa fa-find\"></i> " . et('Portscan') . "</button>
+                    <button type=button class=\"btn\" onclick=\"about_form()\" value=\"".et('About')."\"><i class=\"fa fa-glob\"></i> ".et('About')."</button>
+                </div>
             </form>
             </nobr>
             </td>
@@ -1819,19 +1961,20 @@ function dir_list_form() {
         }
         if($entry_count){
             $out .= "
-                <tr bgcolor=\"#DDDDDD\"><td colspan=50><nobr>".implode('/',$breadcrumbs)."</nobr>
-                <tr>
+                <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td colspan=50><nobr>".implode('<i class="bdc-link">/</i>',$breadcrumbs)."</nobr>
+                <tr style=\"border-bottom: 2px solid #d4d2d2;\">
                 <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
-                    <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" id=\"ANI0\" value=\"".et('SelAll')."\">
-                    <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\">
-                    <input type=\"button\" style=\"width:80\" onclick=\"test(4)\" value=\"".et('Rem')."\">
-                    <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(5)\" value=\"".et('Copy')."\">
-                    <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(6)\" value=\"".et('Move')."\">
-                    <input type=\"button\" style=\"width:100\" onclick=\"test_prompt(71)\" value=\"".et('Compress')."\">";
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"selectANI(this)\" id=\"ANI0\" value=\"".et('SelAll')."\"><i class=\"fa fa-copy-o\"></i> " . et('SelAll') . "</button>
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\"><i class=\"fa fa-file-light\"></i> " . et('SelInverse') . "</button>
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"test(4)\"> <i class=\"fa fa-file-remove\"></i> " . et('Rem') . "</button>
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"sel_dir(5)\"> <i class=\"fa fa-copy\"></i> " . et('Copy') . "</button>
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"sel_dir(6)\"><i class=\"fa fa-file-go\"></i> " . et('Move') . "</button>
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"test_prompt(71)\"><i class=\"fa fa-file-archive-o\"></i> " . et('Compress') . "</button>";
+
             if (!$is_windows) $out .= "
-                    <input type=\"button\" style=\"width:100\" onclick=\"resolve_ids()\" value=\"".et('ResolveIDs')."\">";
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>";
             $out .= "
-                    <input type=\"button\" style=\"width:100\" onclick=\"chmod_form()\" value=\"".et('Perms')."\">";
+                <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>";
             $out .= "
                 </nobr></td>
                 </tr>
@@ -1849,7 +1992,7 @@ function dir_list_form() {
                     $dir_out[$dir_count] = array();
                     $dir_out[$dir_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
-                        <td><nobr><a href=\"JavaScript:go('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
+                        <td><nobr><span class=\"fa fa-folder\"></span> <a href=\"JavaScript:go('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
                     $dir_out[$dir_count][] = "<td>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $dir_out[$dir_count][] = "<td><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -1857,7 +2000,7 @@ function dir_list_form() {
                     }
                     $dir_out[$dir_count][] = "<td><nobr>".$dir_entry["sizet"]."</nobr></td>";
                     $dir_out[$dir_count][] = "<td><nobr>".$dir_entry["datet"]."</nobr></td>";
-                    if ($has_files) $dir_out[$dir_count][] = "<td>&nbsp;</td>";
+                    if ($has_files) $dir_out[$dir_count][] = "<td>Folder</td>";
                     // Opções de diretório
                     if ( is_writable($fm_current_dir.$file) ) $dir_out[$dir_count][] = "
                         <td align=center><a href=\"JavaScript:if(confirm('".et('ConfRem')." \\'".addslashes($file)."\\' ?')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=8&cmd_arg=".addslashes($file)."&fm_current_dir=".addslashes($fm_current_dir)."'\">".et('Rem')."</a>";
@@ -1871,7 +2014,7 @@ function dir_list_form() {
                     $file_out[$file_count] = array();
                     $file_out[$file_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
-                        <td><nobr><a href=\"JavaScript:download('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
+                        <td><nobr><span class=\"" . get_file_icon_class($fm_path_info["basename"] . $file) . "\"></span> <a href=\"JavaScript:download('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
                     $file_out[$file_count][] = "<td>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $file_out[$file_count][] = "<td><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -1905,24 +2048,23 @@ function dir_list_form() {
                     $file_count++;
                 }
             }
-            if ($dir_count){
-                $out .= "
-                <tr>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or1&fm_current_dir=$fm_current_dir\">".et('Name')."</a></nobr></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or2&fm_current_dir=$fm_current_dir\">".et('Perm')."</a></nobr></td>";
-                if (!$is_windows) $out .= "
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or3&fm_current_dir=$fm_current_dir\">".et('Owner')."</a></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or4&fm_current_dir=$fm_current_dir\">".et('Group')."</a></nobr></td>";
-                $out .= "
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or5&fm_current_dir=$fm_current_dir\">".et('Size')."</a></nobr></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or6&fm_current_dir=$fm_current_dir\">".et('Date')."</a></nobr></td>";
-                if ($file_count) $out .= "
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or7&fm_current_dir=$fm_current_dir\">".et('Type')."</a></nobr></td>";
-                $out .= "
-                      <td bgcolor=\"#DDDDDD\" colspan=50>&nbsp;</td>
-                </tr>";
 
-            }
+            $out .= "
+            <tr>
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or1&fm_current_dir=$fm_current_dir\">".et('Name')."</a></nobr></th>
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or2&fm_current_dir=$fm_current_dir\">".et('Perm')."</a></nobr></th>";
+            if (!$is_windows) $out .= "
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or3&fm_current_dir=$fm_current_dir\">".et('Owner')."</a></th>
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or4&fm_current_dir=$fm_current_dir\">".et('Group')."</a></nobr></th>";
+            $out .= "
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or5&fm_current_dir=$fm_current_dir\">".et('Size')."</a></nobr></th>
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or6&fm_current_dir=$fm_current_dir\">".et('Date')."</a></nobr></th>";
+            if ($file_count) $out .= "
+                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or7&fm_current_dir=$fm_current_dir\">".et('Type')."</a></nobr></th>";
+            $out .= "
+                  <th colspan=50 style=\"text-align: center\"><nobr><a href=\"#\">".et('Other')."</a></nobr></th>
+            </tr>";
+
             foreach($dir_out as $k=>$v){
                 while (count($dir_out[$k])<$max_opt) {
                     $dir_out[$k][] = "<td>&nbsp;</td>";
@@ -1930,22 +2072,7 @@ function dir_list_form() {
                 $out .= implode($dir_out[$k]);
                 $out .= "</tr>";
             }
-            if ($file_count){
-                $out .= "
-                <tr>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or1&fm_current_dir=$fm_current_dir\">".et('Name')."</a></nobr></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or2&fm_current_dir=$fm_current_dir\">".et('Perm')."</a></nobr></td>";
-                if (!$is_windows) $out .= "
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or3&fm_current_dir=$fm_current_dir\">".et('Owner')."</a></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or4&fm_current_dir=$fm_current_dir\">".et('Group')."</a></nobr></td>";
-                $out .= "
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or5&fm_current_dir=$fm_current_dir\">".et('Size')."</a></nobr></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or6&fm_current_dir=$fm_current_dir\">".et('Date')."</a></nobr></td>
-                      <td bgcolor=\"#DDDDDD\"><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or7&fm_current_dir=$fm_current_dir\">".et('Type')."</a></nobr></td>
-                      <td bgcolor=\"#DDDDDD\" colspan=50>&nbsp;</td>
-                </tr>";
 
-            }
             foreach($file_out as $k=>$v){
                 while (count($file_out[$k])<$max_opt) {
                     $file_out[$k][] = "<td>&nbsp;</td>";
@@ -1956,34 +2083,36 @@ function dir_list_form() {
             $out .= "
                 <tr>
                 <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
-                      <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" id=\"ANI1\" value=\"".et('SelAll')."\">
-                      <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\">
-                      <input type=\"button\" style=\"width:80\" onclick=\"test(4)\" value=\"".et('Rem')."\">
-                      <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(5)\" value=\"".et('Copy')."\">
-                      <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(6)\" value=\"".et('Move')."\">
-                      <input type=\"button\" style=\"width:100\" onclick=\"test_prompt(71)\" value=\"".et('Compress')."\">";
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"selectANI(this)\" id=\"ANI1\" value=\"".et('SelAll')."\"><i class=\"fa fa-copy-o\"></i> " . et('SelAll') . "</button>
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\"><i class=\"fa fa-file-light\"></i> " . et('SelInverse') . "</button>
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"test(4)\"> <i class=\"fa fa-file-remove\"></i> " . et('Rem') . "</button>
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"sel_dir(5)\"> <i class=\"fa fa-copy\"></i> " . et('Copy') . "</button>
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"sel_dir(6)\"><i class=\"fa fa-file-go\"></i> " . et('Move') . "</button>
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"test_prompt(71)\"><i class=\"fa fa-file-archive-o\"></i> " . et('Compress') . "</button>";
+
             if (!$is_windows) $out .= "
-                      <input type=\"button\" style=\"width:100\" onclick=\"resolve_ids()\" value=\"".et('ResolveIDs')."\">";
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>";
             $out .= "
-                      <input type=\"button\" style=\"width:100\" onclick=\"chmod_form()\" value=\"".et('Perms')."\">";
+                    <button type=\"button\" class=\"btn btn-sm btn-outline-primary\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>";
             $out .= "
                 </nobr></td>
                 </tr>";
             $out .= "
             </form>";
             $out .= "
-                <tr><td bgcolor=\"#DDDDDD\" colspan=50><b>$dir_count ".et('Dir_s')." ".et('And')." $file_count ".et('File_s')." = ".format_size($total_size)."</td></tr>";
+                <tr style=\"border-top: 2px solid #eaeaea;\"><td bgcolor=\"#DDDDDD\" colspan=50 class=\"fm-disk-info\">
+                <span>$dir_count ".et('Dir_s')." ".et('And')." $file_count ".et('File_s')." = ".format_size($total_size)."</span>";
             if ($quota_mb) {
                 $out .= "
-                <tr><td bgcolor=\"#DDDDDD\" colspan=50><b>".et('Partition').": ".format_size(($quota_mb*1024*1024))." ".et('Total')." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</td></tr>";
+                <span>".et('Partition').": ".format_size(($quota_mb*1024*1024))." ".et('Total')." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span>";
             } else {
                 $out .= "
-                <tr><td bgcolor=\"#DDDDDD\" colspan=50><b>".et('Partition').": ".format_size(disk_total_space($fm_current_dir))." ".et('Total')." - ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</td></tr>";
+                <span>".et('Partition').": ".format_size(disk_total_space($fm_current_dir))." ".et('Total')." - ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span>";
             }
             $tf = getmicrotime();
             $tt = ($tf - $ti);
             $out .= "
-                <tr><td bgcolor=\"#DDDDDD\" colspan=50><b>".et('RenderTime').": ".substr($tt,0,strrpos($tt,".")+5)." ".et('Seconds')."</td></tr>";
+                <span>".et('RenderTime').": ".substr($tt,0,strrpos($tt,".")+5)." ".et('Seconds')."</span></td></tr>";
             $out .= "
             <script language=\"Javascript\" type=\"text/javascript\">
             <!--
@@ -2333,6 +2462,170 @@ function get_mime_type($ext = ''){
       'eml'   =>  'message/rfc822'
     );
     return (!isset($mimes[lowercase($ext)])) ? 'application/octet-stream' : $mimes[lowercase($ext)];
+}
+function get_file_icon_class($path)
+{
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    switch ($ext) {
+        case 'ico':
+        case 'gif':
+        case 'jpg':
+        case 'jpeg':
+        case 'jpc':
+        case 'jp2':
+        case 'jpx':
+        case 'xbm':
+        case 'wbmp':
+        case 'png':
+        case 'bmp':
+        case 'tif':
+        case 'tiff':
+        case 'svg':
+            $img = 'fa fa-picture';
+            break;
+        case 'passwd':
+        case 'ftpquota':
+        case 'sql':
+        case 'js':
+        case 'json':
+        case 'sh':
+        case 'config':
+        case 'twig':
+        case 'tpl':
+        case 'md':
+        case 'gitignore':
+        case 'c':
+        case 'cpp':
+        case 'cs':
+        case 'py':
+        case 'map':
+        case 'lock':
+        case 'dtd':
+            $img = 'fa fa-code';
+            break;
+        case 'txt':
+        case 'ini':
+        case 'conf':
+        case 'log':
+        case 'htaccess':
+            $img = 'fa fa-file-text-o';
+            break;
+        case 'css':
+        case 'less':
+        case 'sass':
+        case 'scss':
+            $img = 'fa fa-code-o';
+            break;
+        case 'zip':
+        case 'rar':
+        case 'gz':
+        case 'tar':
+        case '7z':
+            $img = 'fa fa-file-archive-o';
+            break;
+        case 'php':
+        case 'php4':
+        case 'php5':
+        case 'phps':
+        case 'phtml':
+            $img = 'fa fa-php';
+            break;
+        case 'htm':
+        case 'html':
+        case 'shtml':
+        case 'xhtml':
+            $img = 'fa fa-html';
+            break;
+        case 'xml':
+        case 'xsl':
+        case 'xslx':
+            $img = 'fa fa-file-excel';
+            break;
+        case 'wav':
+        case 'mp3':
+        case 'mp2':
+        case 'm4a':
+        case 'aac':
+        case 'ogg':
+        case 'oga':
+        case 'wma':
+        case 'mka':
+        case 'flac':
+        case 'ac3':
+        case 'tds':
+        case 'm3u':
+        case 'm3u8':
+        case 'pls':
+        case 'cue':
+            $img = 'fa fa-music';
+            break;
+        case 'avi':
+        case 'mpg':
+        case 'mpeg':
+        case 'mp4':
+        case 'm4v':
+        case 'flv':
+        case 'f4v':
+        case 'ogm':
+        case 'ogv':
+        case 'mov':
+        case 'mkv':
+        case '3gp':
+        case 'asf':
+        case 'wmv':
+            $img = 'fa fa-video';
+            break;
+        case 'xls':
+        case 'xlsx':
+            $img = 'fa fa-file-excel-o';
+            break;
+        case 'asp':
+        case 'aspx':
+            $img = 'fa fa-file-aspx';
+            break;
+        case 'sql':
+        case 'mda':
+        case 'myd':
+        case 'dat':
+        case 'sql.gz':
+            $img = 'fa fa-database';
+            break;
+        case 'doc':
+        case 'docx':
+            $img = 'fa fa-file-word';
+            break;
+        case 'ppt':
+        case 'pptx':
+            $img = 'fa fa-file-powerpoint';
+            break;
+        case 'ttf':
+        case 'ttc':
+        case 'otf':
+        case 'woff':
+        case 'woff2':
+        case 'eot':
+        case 'fon':
+            $img = 'fa fa-font';
+            break;
+        case 'pdf':
+            $img = 'fa fa-file-pdf';
+            break;
+        case 'psd':
+        case 'ai':
+        case 'eps':
+        case 'fla':
+        case 'swf':
+            $img = 'fa fa-file-image-o';
+            break;
+        case 'exe':
+        case 'msi':
+            $img = 'fa fa-file-o';
+            break;
+        default:
+            $img = 'fa fa-file';
+    }
+
+    return $img;
 }
 function view_form(){
     global $doc_root,$fm_path_info,$url_info,$fm_current_dir,$is_windows,$filename,$passthru;
@@ -3338,15 +3631,14 @@ function login_form(){
         </script>";
     } else {
         echo "
-        <table class=\"noScriptHidden\" border=0 cellspacing=0 cellpadding=5>
-            <form name=\"login_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\">
-            <tr><td><font size=4>".et('FileMan')."</font></td></tr>
-            <tr><td align=left><font size=3>".et('Pass').":</font> <input name=pass type=password size=10> <input type=submit value=\"".et('Send')."\"></td></tr>";
-            if (strlen($erro)) echo "
-            <tr><td align=left><font color=red size=3>".et('InvPass')."</font></td></tr>";
-            echo "
-            </form>
-        </table>
+        <form class=\"form-signin noScriptHidden mt-5\" name=\"login_form\" action=\"" . $fm_path_info["basename"] . "\" method=\"post\">
+            <h2 class=\"form-signin-heading text-center\">" . et('FileMan') . "</h2>
+            <input type=\"password\" class=\"form-control\" name=\"pass\" placeholder=\"".et('Pass')."\" required=\"\"/>      
+            <button class=\"login-btn\" type=\"submit\">".et('Login')."</button>";
+        if (strlen($erro)) echo "
+            <div class=\"alert alert-danger mt-3\">" . et('InvPass') . "</div>";
+        echo "
+        </form>
         <script language=\"Javascript\" type=\"text/javascript\">
         <!--
             document.login_form.pass.focus();
