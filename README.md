@@ -19,7 +19,7 @@ This is a tool meant for rapid file access, and also to verify the server php co
 
 ## License:
 phpFileManager is free software; you can redistribute it and/or modify it
-under the terms of the terms of any of the following licenses at your choice:
+under the terms any of the following licenses at your choice:
 - GNU General Public License Version 2 or later (the "GPL");
 - GNU Lesser General Public License Version 2.1 or later (the "LGPL");
 - Mozilla Public License Version 1.1 or later (the "MPL"). 
