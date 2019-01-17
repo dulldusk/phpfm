@@ -1,5 +1,5 @@
 <?php
-
+//{"lang":"","auth_pass":"d41d8cd98f00b204e9800998ecf8427e","error_reporting":"1"}
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
@@ -747,9 +747,9 @@ function html_header($header=""){
             padding: 0 1px;
         }
         .fm-disk-info span {
-            padding: .1em 0.4em;
+			display: inline-block;
+            margin: 2px 0;
             font-weight: 700;
-            border: 1px solid #adaeaf;
         }
         .table {
             width: 100%;
@@ -771,38 +771,38 @@ function html_header($header=""){
         .table th { text-align: left;}
         .form-signin {
             max-width: 380px;
-            padding: 15px 35px 45px;
+            padding: 20px 20px 25px 20px;
             margin: 0 auto;
             background-color: #fff;
-            border: 1px solid rgba(0,0,0,0.1);  
+            border: 1px solid rgba(0,0,0,0.1);
          }
         .form-signin-heading, .checkbox {
-            margin-bottom: 30px;
+			margin-top: 0;
+            margin-bottom: 18px;
         }
         .form-signin input[type=\"password\"] {
-            margin-bottom: 20px;
             border-top-left-radius: 0;
             border-top-right-radius: 0;
             max-width: 70%;
+			float: left;
         }
         .form-signin .login-btn {
-            color: #fff;
-            background-color: #218838;
-            border-color: #1e7e34;
-            padding: .5rem 1rem;
-            font-size: 1.25rem;
+            padding: .4rem 1rem;
+            font-size: 1rem;
             line-height: 1.5;
             font-weight: 400;
             text-align: center;
             cursor: pointer;
             border-style: solid;
+			float: right;
         }
         .alert {
             position: relative;
             padding: .75rem 1.25rem;
-            margin-bottom: 1rem;
             border: 1px solid transparent;
             border-radius: .25rem;
+			clear: both;
+			margin-top: 20px;
         }
         .alert-danger {
             color: #721c24;
@@ -812,7 +812,7 @@ function html_header($header=""){
         .form-control {
             display: block;
             width: 100%;
-            height: calc(2.25rem + 2px);
+            height: calc(1.5rem + 4px);
             padding: .375rem .75rem;
             font-size: 1rem;
             line-height: 1.5;
@@ -827,7 +827,7 @@ function html_header($header=""){
         .mt-5 { margin-top: 3rem!important; }
         .fa {
             background:url('" . $fm_path_info["basename"] . "?action=99&filename=file_sprite.png') 0 0 no-repeat;
-            width: 18px;height: 18px;line-height: 18px;display:inline-block;vertical-align: text-bottom;    
+            width: 18px;height: 18px;line-height: 18px;display:inline-block;vertical-align: text-bottom;
         }
         .fa.fa-code { background-position: -126px 0; }
         .fa.fa-code-o { background-position: -143px 0; }
@@ -853,9 +853,9 @@ function html_header($header=""){
         .fa.fa-add-file { background-position: -54px 0; }
         .fa.fa-upload { background-position: -453px 0; }
         .fa.fa-file-go { background-position: -470px 0; }
-        .fa.fa-find { background-position: -380px 0; } 
-        .fa.fa-file-light { background-position: -470px -18px; } 
-        .fa.fa-file-remove { background-position: -290px 0; } 
+        .fa.fa-find { background-position: -380px 0; }
+        .fa.fa-file-light { background-position: -470px -18px; }
+        .fa.fa-file-remove { background-position: -290px 0; }
         .fa.fa-file-config { background-position: -308px 0; }
         .fa.fa-copy { background-position: -198px 0; }
         .fa.fa-copy-o { background-position: -198px -18px; }
@@ -1921,9 +1921,8 @@ function dir_list_form() {
         $out .= "
             <tr style=\"border-bottom: 2px solid #eaeaea;\">
             <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
-            <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
-                <div class=\"float-left\"><h1 class=\"fm-title\">".et('FileMan')."</h1></div>
-                <div class=\"float-right\">
+            <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">                
+                <div class=\"float-left\">
                     <button class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
                     <button class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
                     <button type=button class=\"btn\" onclick=\"test_prompt(1)\" value=\"" . et('CreateDir') . "\"> <i class=\"fa fa-folder\"></i> ".et('CreateDir')."</button>
@@ -2101,13 +2100,13 @@ function dir_list_form() {
             </form>";
             $out .= "
                 <tr style=\"border-top: 2px solid #eaeaea;\"><td bgcolor=\"#DDDDDD\" colspan=50 class=\"fm-disk-info\">
-                <span>$dir_count ".et('Dir_s')." ".et('And')." $file_count ".et('File_s')." = ".format_size($total_size)."</span>";
+                <span>$dir_count ".et('Dir_s')." ".et('And')." $file_count ".et('File_s')." = ".format_size($total_size)."</span><br />";
             if ($quota_mb) {
                 $out .= "
-                <span>".et('Partition').": ".format_size(($quota_mb*1024*1024))." ".et('Total')." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span>";
+                <span>".et('Partition').": ".format_size(($quota_mb*1024*1024))." ".et('Total')." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span><br />";
             } else {
                 $out .= "
-                <span>".et('Partition').": ".format_size(disk_total_space($fm_current_dir))." ".et('Total')." - ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span>";
+                <span>".et('Partition').": ".format_size(disk_total_space($fm_current_dir))." ".et('Total')." - ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span><br />";
             }
             $tf = getmicrotime();
             $tt = ($tf - $ti);
@@ -2797,7 +2796,7 @@ function config_form(){
             <option value='es'>Spanish - by Sh Studios
             <option value='ru'>Russian - by Евгений Рашев, Алексей Гаврюшин
             <option value='tr'>Turkish - by Necdet Yazilimlari
-            <option value='ua'>Українська - by Андрій Литвин
+            <option value='ua'>Ukrainian - by Андрій Литвин
         </select></td></tr>
         <tr><td align=right>".et('ErrorReport').":<td><select name=newerror style=\"width:406px\">
         <option value=\"0\">Disabled
@@ -3632,12 +3631,13 @@ function login_form(){
         </script>";
     } else {
         echo "
-        <form class=\"form-signin noScriptHidden mt-5\" name=\"login_form\" action=\"" . $fm_path_info["basename"] . "\" method=\"post\">
+        <form class=\"form-signin noScriptHidden mt-4\" name=\"login_form\" action=\"" . $fm_path_info["basename"] . "\" method=\"post\">
             <h2 class=\"form-signin-heading text-center\">" . et('FileMan') . "</h2>
-            <input type=\"password\" class=\"form-control\" name=\"pass\" placeholder=\"".et('Pass')."\" required=\"\"/>      
-            <button class=\"login-btn\" type=\"submit\">".et('Login')."</button>";
+          	<input type=\"password\" class=\"form-control\" name=\"pass\" placeholder=\"".et('Pass')."\" required=\"\"/>
+           	<button class=\"login-btn\" type=\"submit\">".et('Login')."</button>
+			<div style=\"clear:both\"></div>";
         if (strlen($erro)) echo "
-            <div class=\"alert alert-danger mt-3\">" . et('InvPass') . "</div>";
+            <div class=\"alert alert-danger\">".et('InvPass')."</div>";
         echo "
         </form>
         <script language=\"Javascript\" type=\"text/javascript\">
@@ -6064,7 +6064,8 @@ function et($tag){
     $et['cn']['SetPass'] = '设置密码';
     $et['cn']['ChangePass'] = '修改密码';
     $et['cn']['Portscan'] = '端口扫描';
- 
+
+	// Ukrainian - by Андрій Литвин
     $et['ua']['Version']='Версія';
     $et['ua']['DocRoot']='Коренева тека';
     $et['ua']['FLRoot']='Коренева тека файлового менеджера';
