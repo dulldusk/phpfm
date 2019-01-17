@@ -2061,7 +2061,7 @@ function dir_list_form() {
             if ($file_count) $out .= "
                   <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or7&fm_current_dir=$fm_current_dir\">".et('Type')."</a></nobr></th>";
             $out .= "
-                  <th colspan=50 style=\"text-align: center\"><nobr><a href=\"#\">".et('Other')."</a></nobr></th>
+                  <th colspan=50>&nbsp;</nobr></th>
             </tr>";
 
             foreach($dir_out as $k=>$v){
