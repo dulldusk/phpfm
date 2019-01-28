@@ -1497,7 +1497,9 @@ function dir_list_form() {
     <table class=\"table\">\n";
     $file_count = 0;
     $dir_count = 0;
+    $io_error = true;
     if ($opdir = @opendir(fs_encode($fm_current_dir))) {
+        $io_error = false;
         $has_files = false;
         $entry_count = 0;
         $total_size = 0;
@@ -1546,435 +1548,437 @@ function dir_list_form() {
           }
         }
         @closedir($opdir);
-        if($entry_count){
-            $or1="1A";
-            $or2="2D";
-            $or3="3A";
-            $or4="4A";
-            $or5="5A";
-            $or6="6D";
-            $or7="7D";
-            switch($order_dir_list_by){
-                case "1A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_ASC); $or1="1D"; break;
-                case "1D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_DESC); $or1="1A"; break;
-                case "2A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"p",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_ASC); $or2="2D"; break;
-                case "2D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"p",SORT_STRING,SORT_DESC,"g",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_ASC); $or2="2A"; break;
-                case "3A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_ASC); $or3="3D"; break;
-                case "3D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_DESC,"g",SORT_STRING,SORT_ASC); $or3="3A"; break;
-                case "4A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_DESC); $or4="4D"; break;
-                case "4D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_DESC,"u",SORT_STRING,SORT_DESC); $or4="4A"; break;
-                case "5A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"size",SORT_NUMERIC,SORT_ASC); $or5="5D"; break;
-                case "5D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"size",SORT_NUMERIC,SORT_DESC); $or5="5A"; break;
-                case "6A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"date",SORT_STRING,SORT_ASC,"time",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_ASC); $or6="6D"; break;
-                case "6D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"date",SORT_STRING,SORT_DESC,"time",SORT_STRING,SORT_DESC,"name",SORT_STRING,SORT_ASC); $or6="6A"; break;
-                case "7A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"ext",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_ASC); $or7="7D"; break;
-                case "7D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"ext",SORT_STRING,SORT_DESC,"name",SORT_STRING,SORT_ASC); $or7="7A"; break;
-            }
+    }
+    if($entry_count){
+        $or1="1A";
+        $or2="2D";
+        $or3="3A";
+        $or4="4A";
+        $or5="5A";
+        $or6="6D";
+        $or7="7D";
+        switch($order_dir_list_by){
+            case "1A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_ASC); $or1="1D"; break;
+            case "1D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_DESC); $or1="1A"; break;
+            case "2A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"p",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_ASC); $or2="2D"; break;
+            case "2D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"p",SORT_STRING,SORT_DESC,"g",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_ASC); $or2="2A"; break;
+            case "3A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_ASC); $or3="3D"; break;
+            case "3D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_DESC,"g",SORT_STRING,SORT_ASC); $or3="3A"; break;
+            case "4A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_ASC,"u",SORT_STRING,SORT_DESC); $or4="4D"; break;
+            case "4D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"g",SORT_STRING,SORT_DESC,"u",SORT_STRING,SORT_DESC); $or4="4A"; break;
+            case "5A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"size",SORT_NUMERIC,SORT_ASC); $or5="5D"; break;
+            case "5D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"size",SORT_NUMERIC,SORT_DESC); $or5="5A"; break;
+            case "6A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"date",SORT_STRING,SORT_ASC,"time",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_ASC); $or6="6D"; break;
+            case "6D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"date",SORT_STRING,SORT_DESC,"time",SORT_STRING,SORT_DESC,"name",SORT_STRING,SORT_ASC); $or6="6A"; break;
+            case "7A": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"ext",SORT_STRING,SORT_ASC,"name",SORT_STRING,SORT_ASC); $or7="7D"; break;
+            case "7D": $entry_list = array_csort ($entry_list,"type",SORT_STRING,SORT_ASC,"ext",SORT_STRING,SORT_DESC,"name",SORT_STRING,SORT_ASC); $or7="7A"; break;
         }
-        $out .= "
-        <script language=\"Javascript\" type=\"text/javascript\">
-        <!--
-        function go_dir_list(arg) {
-            document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."'+encodeURIComponent(arg)+'".addslashes(DIRECTORY_SEPARATOR)."';
-        }
-        function resolve_ids() {
-            document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&set_resolve_ids=1&fm_current_dir=".rawurlencode($fm_current_dir)."';
-        }
-        var entry_list = new Array();
-        // Custom object constructor
-        function entry(name, type, size, selected){
-            this.name = name;
-            this.type = type;
-            this.size = size;
-            this.selected = false;
-        }
-        // Declare entry_list for selection procedures";
-        foreach ($entry_list as $i=>$data){
-            $out .= "\nentry_list['entry$i'] = new entry('".addslashes($data["name"])."', '".$data["type"]."', ".$data["size"].", false);";
-        }
-        $out .= "
-        // Select/Unselect Rows OnClick/OnMouseOver
-        var lastRows = new Array(null,null);
-        function selectEntry(Row, Action){
-            if (multipleSelection){
-                // Avoid repeated onmouseover events from same Row ( cell transition )
-                if (Row != lastRows[0]){
-                    if (Action == 'over') {
-                        if (entry_list[Row.id].selected){
-                            if (unselect(entry_list[Row.id])) {
-                                Row.className = 'entryUnselected';
-                            }
-                            // Change the last Row when you change the movement orientation
-                            if (lastRows[0] != null && lastRows[1] != null){
-                                var LastRowID = lastRows[0].id;
-                                if (Row.id == lastRows[1].id){
-                                    if (unselect(entry_list[LastRowID])) {
-                                        lastRows[0].className = 'entryUnselected';
-                                    }
-                                }
-                            }
-                        } else {
-                            if (select(entry_list[Row.id])){
-                                Row.className = 'entrySelected';
-                            }
-                            // Change the last Row when you change the movement orientation
-                            if (lastRows[0] != null && lastRows[1] != null){
-                                var LastRowID = lastRows[0].id;
-                                if (Row.id == lastRows[1].id){
-                                    if (select(entry_list[LastRowID])) {
-                                        lastRows[0].className = 'entrySelected';
-                                    }
+    }
+    $out .= "
+    <script language=\"Javascript\" type=\"text/javascript\">
+    <!--
+    function go_dir_list(arg) {
+        document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."'+encodeURIComponent(arg)+'".addslashes(DIRECTORY_SEPARATOR)."';
+    }
+    function resolve_ids() {
+        document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&set_resolve_ids=1&fm_current_dir=".rawurlencode($fm_current_dir)."';
+    }
+    var entry_list = new Array();
+    // Custom object constructor
+    function entry(name, type, size, selected){
+        this.name = name;
+        this.type = type;
+        this.size = size;
+        this.selected = false;
+    }
+    // Declare entry_list for selection procedures";
+    foreach ($entry_list as $i=>$data){
+        $out .= "\nentry_list['entry$i'] = new entry('".addslashes($data["name"])."', '".$data["type"]."', ".$data["size"].", false);";
+    }
+    $out .= "
+    // Select/Unselect Rows OnClick/OnMouseOver
+    var lastRows = new Array(null,null);
+    function selectEntry(Row, Action){
+        if (multipleSelection){
+            // Avoid repeated onmouseover events from same Row ( cell transition )
+            if (Row != lastRows[0]){
+                if (Action == 'over') {
+                    if (entry_list[Row.id].selected){
+                        if (unselect(entry_list[Row.id])) {
+                            Row.className = 'entryUnselected';
+                        }
+                        // Change the last Row when you change the movement orientation
+                        if (lastRows[0] != null && lastRows[1] != null){
+                            var LastRowID = lastRows[0].id;
+                            if (Row.id == lastRows[1].id){
+                                if (unselect(entry_list[LastRowID])) {
+                                    lastRows[0].className = 'entryUnselected';
                                 }
                             }
                         }
-                        lastRows[1] = lastRows[0];
-                        lastRows[0] = Row;
+                    } else {
+                        if (select(entry_list[Row.id])){
+                            Row.className = 'entrySelected';
+                        }
+                        // Change the last Row when you change the movement orientation
+                        if (lastRows[0] != null && lastRows[1] != null){
+                            var LastRowID = lastRows[0].id;
+                            if (Row.id == lastRows[1].id){
+                                if (select(entry_list[LastRowID])) {
+                                    lastRows[0].className = 'entrySelected';
+                                }
+                            }
+                        }
                     }
+                    lastRows[1] = lastRows[0];
+                    lastRows[0] = Row;
                 }
-            } else {
-                if (Action == 'click') {
-                    var newClassName = null;
+            }
+        } else {
+            if (Action == 'click') {
+                var newClassName = null;
+                if (entry_list[Row.id].selected){
+                    if (unselect(entry_list[Row.id])) newClassName = 'entryUnselected';
+                } else {
+                    if (select(entry_list[Row.id])) newClassName = 'entrySelected';
+                }
+                if (newClassName) {
+                    lastRows[0] = lastRows[1] = Row;
+                    Row.className = newClassName;
+                }
+            }
+        }
+        return true;
+    }
+    // Disable text selection and bind multiple selection flag
+    var multipleSelection = false;
+    if (is.ie) {
+        document.onselectstart=new Function('return false');
+        document.onmousedown=switch_flag_on;
+        document.onmouseup=switch_flag_off;
+        // Event mouseup is not generated over scrollbar.. curiously, mousedown is.. go figure.
+        window.onscroll=new Function('multipleSelection=false');
+        window.onresize=new Function('multipleSelection=false');
+    } else {
+        if (document.layers) window.captureEvents(Event.MOUSEDOWN);
+        if (document.layers) window.captureEvents(Event.MOUSEUP);
+        window.onmousedown=switch_flag_on;
+        window.onmouseup=switch_flag_off;
+    }
+    // Using same function and a ternary operator couses bug on double click
+    function switch_flag_on(e) {
+        if (is.ie){
+            multipleSelection = (event.button == 1);
+        } else {
+            multipleSelection = (e.which == 1);
+        }
+        var type = String(e.target.type);
+        return (type.indexOf('select') != -1 || type.indexOf('button') != -1 || type.indexOf('input') != -1 || type.indexOf('radio') != -1);
+    }
+    function switch_flag_off(e) {
+        if (is.ie){
+            multipleSelection = (event.button != 1);
+        } else {
+            multipleSelection = (e.which != 1);
+        }
+        lastRows[0] = lastRows[1] = null;
+        update_sel_status();
+        return false;
+    }
+    var total_dirs_selected = 0;
+    var total_files_selected = 0;
+    function unselect(Entry){
+        if (!Entry.selected) return false;
+        Entry.selected = false;
+        sel_totalsize -= Entry.size;
+        if (Entry.type == 'dir') total_dirs_selected--;
+        else total_files_selected--;
+        return true;
+    }
+    function select(Entry){
+        if(Entry.selected) return false;
+        Entry.selected = true;
+        sel_totalsize += Entry.size;
+        if(Entry.type == 'dir') total_dirs_selected++;
+        else total_files_selected++;
+        return true;
+    }
+    function is_anything_selected(){
+        var selected_dir_list = new Array();
+        var selected_file_list = new Array();
+        for(var x=0;x<".(integer)count($entry_list).";x++){
+            if(entry_list['entry'+x].selected){
+                if(entry_list['entry'+x].type == 'dir') selected_dir_list.push(entry_list['entry'+x].name);
+                else selected_file_list.push(entry_list['entry'+x].name);
+            }
+        }
+        document.form_action.selected_dir_list.value = selected_dir_list.join('<|*|>');
+        document.form_action.selected_file_list.value = selected_file_list.join('<|*|>');
+        return (total_dirs_selected>0 || total_files_selected>0);
+    }
+    function format_size (arg) {
+        var resul = '';
+        if (arg>0){
+            var j = 0;
+            var ext = new Array(' bytes',' Kb',' Mb',' Gb',' Tb');
+            while (arg >= Math.pow(1024,j)) ++j;
+            resul = (Math.round(arg/Math.pow(1024,j-1)*100)/100) + ext[j-1];
+        } else resul = 0;
+        return resul;
+    }
+    var sel_totalsize = 0;
+    function update_sel_status(){
+        var t = total_dirs_selected+' ".et('Dir_s')." ".et('And')." '+total_files_selected+' ".et('File_s')." ".et('Selected_s')." = '+format_size(sel_totalsize);
+        //document.getElementById(\"sel_status\").innerHTML = t;
+        window.status = t;
+    }
+    // Select all/none/inverse
+    function selectANI(Butt){
+        cancel_copy_move();
+        for(var x=0;x<". (integer)count($entry_list).";x++){
+            var Row = document.getElementById('entry'+x);
+            var newClassName = null;
+            switch (Butt.value){
+                case '".et('SelAll')."':
+                    if (select(entry_list[Row.id])) newClassName = 'entrySelected';
+                break;
+                case '".et('SelNone')."':
+                    if (unselect(entry_list[Row.id])) newClassName = 'entryUnselected';
+                break;
+                case '".et('SelInverse')."':
                     if (entry_list[Row.id].selected){
                         if (unselect(entry_list[Row.id])) newClassName = 'entryUnselected';
                     } else {
                         if (select(entry_list[Row.id])) newClassName = 'entrySelected';
                     }
-                    if (newClassName) {
-                        lastRows[0] = lastRows[1] = Row;
-                        Row.className = newClassName;
-                    }
-                }
+                break;
             }
-            return true;
-        }
-        // Disable text selection and bind multiple selection flag
-        var multipleSelection = false;
-        if (is.ie) {
-            document.onselectstart=new Function('return false');
-            document.onmousedown=switch_flag_on;
-            document.onmouseup=switch_flag_off;
-            // Event mouseup is not generated over scrollbar.. curiously, mousedown is.. go figure.
-            window.onscroll=new Function('multipleSelection=false');
-            window.onresize=new Function('multipleSelection=false');
-        } else {
-            if (document.layers) window.captureEvents(Event.MOUSEDOWN);
-            if (document.layers) window.captureEvents(Event.MOUSEUP);
-            window.onmousedown=switch_flag_on;
-            window.onmouseup=switch_flag_off;
-        }
-        // Using same function and a ternary operator couses bug on double click
-        function switch_flag_on(e) {
-            if (is.ie){
-                multipleSelection = (event.button == 1);
-            } else {
-                multipleSelection = (e.which == 1);
-            }
-            var type = String(e.target.type);
-            return (type.indexOf('select') != -1 || type.indexOf('button') != -1 || type.indexOf('input') != -1 || type.indexOf('radio') != -1);
-        }
-        function switch_flag_off(e) {
-            if (is.ie){
-                multipleSelection = (event.button != 1);
-            } else {
-                multipleSelection = (e.which != 1);
-            }
-            lastRows[0] = lastRows[1] = null;
-            update_sel_status();
-            return false;
-        }
-        var total_dirs_selected = 0;
-        var total_files_selected = 0;
-        function unselect(Entry){
-            if (!Entry.selected) return false;
-            Entry.selected = false;
-            sel_totalsize -= Entry.size;
-            if (Entry.type == 'dir') total_dirs_selected--;
-            else total_files_selected--;
-            return true;
-        }
-        function select(Entry){
-            if(Entry.selected) return false;
-            Entry.selected = true;
-            sel_totalsize += Entry.size;
-            if(Entry.type == 'dir') total_dirs_selected++;
-            else total_files_selected++;
-            return true;
-        }
-        function is_anything_selected(){
-            var selected_dir_list = new Array();
-            var selected_file_list = new Array();
-            for(var x=0;x<".(integer)count($entry_list).";x++){
-                if(entry_list['entry'+x].selected){
-                    if(entry_list['entry'+x].type == 'dir') selected_dir_list.push(entry_list['entry'+x].name);
-                    else selected_file_list.push(entry_list['entry'+x].name);
-                }
-            }
-            document.form_action.selected_dir_list.value = selected_dir_list.join('<|*|>');
-            document.form_action.selected_file_list.value = selected_file_list.join('<|*|>');
-            return (total_dirs_selected>0 || total_files_selected>0);
-        }
-        function format_size (arg) {
-            var resul = '';
-            if (arg>0){
-                var j = 0;
-                var ext = new Array(' bytes',' Kb',' Mb',' Gb',' Tb');
-                while (arg >= Math.pow(1024,j)) ++j;
-                resul = (Math.round(arg/Math.pow(1024,j-1)*100)/100) + ext[j-1];
-            } else resul = 0;
-            return resul;
-        }
-        var sel_totalsize = 0;
-        function update_sel_status(){
-            var t = total_dirs_selected+' ".et('Dir_s')." ".et('And')." '+total_files_selected+' ".et('File_s')." ".et('Selected_s')." = '+format_size(sel_totalsize);
-            //document.getElementById(\"sel_status\").innerHTML = t;
-            window.status = t;
-        }
-        // Select all/none/inverse
-        function selectANI(Butt){
-            cancel_copy_move();
-            for(var x=0;x<". (integer)count($entry_list).";x++){
-                var Row = document.getElementById('entry'+x);
-                var newClassName = null;
-                switch (Butt.value){
-                    case '".et('SelAll')."':
-                        if (select(entry_list[Row.id])) newClassName = 'entrySelected';
-                    break;
-                    case '".et('SelNone')."':
-                        if (unselect(entry_list[Row.id])) newClassName = 'entryUnselected';
-                    break;
-                    case '".et('SelInverse')."':
-                        if (entry_list[Row.id].selected){
-                            if (unselect(entry_list[Row.id])) newClassName = 'entryUnselected';
-                        } else {
-                            if (select(entry_list[Row.id])) newClassName = 'entrySelected';
-                        }
-                    break;
-                }
-                if (newClassName) {
-                    Row.className = newClassName;
-                }
-            }
-            if (Butt.value == '".et('SelAll')."'){
-                for(var i=0;i<2;i++){
-                    document.getElementById('ANI'+i).innerHTML='<i class=\"fa fa-copy-o\"></i> " . et('SelNone') . "';
-                    document.getElementById('ANI'+i).value='".et('SelNone')."';
-                }
-            } else if (Butt.value == '".et('SelNone')."'){
-                for(var i=0;i<2;i++){
-                    document.getElementById('ANI'+i).innerHTML='<i class=\"fa fa-copy-o\"></i> " . et('SelAll') . "';
-                    document.getElementById('ANI'+i).value='".et('SelAll')."';
-                }
-            }
-            update_sel_status();
-            return true;
-        }
-        function download(arg){
-            parent.frame1.location.href='".addslashes($fm_path_info["basename"])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
-        }
-        function upload_form(){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',800,350,true);
-        }
-        function decompress(arg){
-            if(confirm('".uppercase(et('Decompress'))." \\' '+arg+' \\' ?')) {
-                document.form_action.action.value = 72;
-                document.form_action.cmd_arg.value = arg;
-                document.form_action.submit();
+            if (newClassName) {
+                Row.className = newClassName;
             }
         }
-        function execute_file(arg){
-            if(arg.length>0){
-                if(confirm('".et('ConfExec')." \\' '+arg+' \\' ?')) {
-                    openModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg),1024,768);
-                }
+        if (Butt.value == '".et('SelAll')."'){
+            for(var i=0;i<2;i++){
+                document.getElementById('ANI'+i).innerHTML='<i class=\"fa fa-copy-o\"></i> " . et('SelNone') . "';
+                document.getElementById('ANI'+i).value='".et('SelNone')."';
+            }
+        } else if (Butt.value == '".et('SelNone')."'){
+            for(var i=0;i<2;i++){
+                document.getElementById('ANI'+i).innerHTML='<i class=\"fa fa-copy-o\"></i> " . et('SelAll') . "';
+                document.getElementById('ANI'+i).value='".et('SelAll')."';
             }
         }
-        function edit_file_form(arg){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." '+(arg),1024,768);
+        update_sel_status();
+        return true;
+    }
+    function download(arg){
+        parent.frame1.location.href='".addslashes($fm_path_info["basename"])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
+    }
+    function upload_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',800,350,true);
+    }
+    function decompress(arg){
+        if(confirm('".uppercase(et('Decompress'))." \\' '+arg+' \\' ?')) {
+            document.form_action.action.value = 72;
+            document.form_action.cmd_arg.value = arg;
+            document.form_action.submit();
         }
-        function config_form(){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."',800,400);
+    }
+    function execute_file(arg){
+        if(arg.length>0){
+            if(confirm('".et('ConfExec')." \\' '+arg+' \\' ?')) {
+                openModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg),1024,768);
+            }
         }
-        function server_info_form(arg){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."',1024,768);
+    }
+    function edit_file_form(arg){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." '+(arg),1024,768);
+    }
+    function config_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."',800,400);
+    }
+    function server_info_form(arg){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."',1024,768);
+    }
+    function shell_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=9','".et('Shell')."',1024,768);
+    }
+    function portscan_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."',1024,768);
+    }
+    function about_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=13','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."',1024,768);
+    }
+    function view_form(arg){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg),1024,768);
+    }
+    function rename(arg){
+        var nome = '';
+        if (nome = prompt('".uppercase(et('Ren'))." \\' '+arg+' \\' ".et('To')." ...')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
+    }
+    function set_dir_dest(arg){
+        document.form_action.dir_dest.value=arg;
+        if (document.form_action.action.value.length>0) test(document.form_action.action.value);
+        else alert('".et('JSError').".');
+    }
+    function sel_dir(arg){
+        document.form_action.action.value = arg;
+        document.form_action.dir_dest.value='';
+        if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
+        else {
+            set_dir_list_warn('".et('SelDir')."...');
+            parent.frame2.set_flag(true);
         }
-        function shell_form(){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=9','".et('Shell')."',1024,768);
+    }
+    function set_dir_list_warn(arg){
+        try {
+            if (arg === false) document.getElementById(\"dir_list_warn\").style.display='none';
+            else {
+                document.getElementById(\"dir_list_warn\").innerHTML=arg;
+                document.getElementById(\"dir_list_warn\").style.display='';
+            }
+        } catch (err) {}
+    }
+    function cancel_copy_move(){
+        document.form_action.action.value = 0;
+        set_dir_list_warn(false);
+        parent.frame2.set_flag(false);
+    }
+    function chmod_form(){
+        cancel_copy_move();
+        document.form_action.dir_dest.value='';
+        document.form_action.chmod_arg.value='';
+        if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
+        else openModalWindow('".addslashes($fm_path_info["basename"])."?action=8','".et('Perms')."',280,180);
+    }
+    function set_chmod_arg(arg){
+        cancel_copy_move();
+        if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
+        else {
+            document.form_action.dir_dest.value='';
+            document.form_action.chmod_arg.value=arg;
+            test(9);
         }
-        function portscan_form(){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."',1024,768);
+    }
+    function test_action(){
+        if (document.form_action.action.value != 0) return true;
+        else return false;
+    }
+    function test_prompt(arg){
+        cancel_copy_move();
+        var erro='';
+        var conf='';
+        if (arg == 1){
+            document.form_action.cmd_arg.value = prompt('".et('TypeDir').".');
+        } else if (arg == 2){
+            document.form_action.cmd_arg.value = prompt('".et('TypeArq').".');
+        } else if (arg == 71){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            else document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."');
         }
-        function about_form(){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=13','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."',1024,768);
-        }
-        function view_form(arg){
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg),1024,768);
-        }
-        function rename(arg){
-            var nome = '';
-            if (nome = prompt('".uppercase(et('Ren'))." \\' '+arg+' \\' ".et('To')." ...')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
-        }
-        function set_dir_dest(arg){
-            document.form_action.dir_dest.value=arg;
-            if (document.form_action.action.value.length>0) test(document.form_action.action.value);
-            else alert('".et('JSError').".');
-        }
-        function sel_dir(arg){
+        if (erro!=''){
+            document.form_action.cmd_arg.focus();
+            set_dir_list_warn(erro);
+        } else if(document.form_action.cmd_arg.value.length>0) {
             document.form_action.action.value = arg;
-            document.form_action.dir_dest.value='';
-            if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
-            else {
-                set_dir_list_warn('".et('SelDir')."...');
-                parent.frame2.set_flag(true);
-            }
+            document.form_action.submit();
         }
-        function set_dir_list_warn(arg){
-            try {
-                if (arg === false) document.getElementById(\"dir_list_warn\").style.display='none';
-                else {
-                    document.getElementById(\"dir_list_warn\").innerHTML=arg;
-                    document.getElementById(\"dir_list_warn\").style.display='';
-                }
-            } catch (err) {}
+    }
+    function strstr(haystack,needle){
+        var index = haystack.indexOf(needle);
+        return (index==-1)?false:index;
+    }
+    function valid_dest(dest,orig){
+        return (strstr(dest,orig)==false)?true:false;
+    }
+    function test(arg){
+        cancel_copy_move();
+        document.form_action.target='_self';
+        var erro='';
+        var conf='';
+        if (arg == 4){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            conf = '".et('RemSel')." ?\\n';
+        } else if (arg == 5){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            else if(document.form_action.dir_dest.value.length == 0) erro = '".et('NoDestDir').".';
+            else if(document.form_action.dir_dest.value == document.form_action.fm_current_dir.value) erro = '".et('DestEqOrig').".';
+            else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
+            conf = '".et('CopyTo')." \\' '+document.form_action.dir_dest.value+' \\' ?\\n';
+        } else if (arg == 6){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            else if(document.form_action.dir_dest.value.length == 0) erro = '".et('NoDestDir').".';
+            else if(document.form_action.dir_dest.value == document.form_action.fm_current_dir.value) erro = '".et('DestEqOrig').".';
+            else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
+            conf = '".et('MoveTo')." \\' '+document.form_action.dir_dest.value+' \\' ?\\n';
+        } else if (arg == 9){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            else if(document.form_action.chmod_arg.value.length == 0) erro = '".et('NoNewPerm').".';
+            //conf = '".et('AlterPermTo')." \\' '+document.form_action.chmod_arg.value+' \\' ?\\n';
+        } else if (arg == 73){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            else document.form_action.target='frame1';
         }
-        function cancel_copy_move(){
-            document.form_action.action.value = 0;
-            set_dir_list_warn(false);
-            parent.frame2.set_flag(false);
-        }
-        function chmod_form(){
-            cancel_copy_move();
-            document.form_action.dir_dest.value='';
-            document.form_action.chmod_arg.value='';
-            if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
-            else openModalWindow('".addslashes($fm_path_info["basename"])."?action=8','".et('Perms')."',280,180);
-        }
-        function set_chmod_arg(arg){
-            cancel_copy_move();
-            if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
-            else {
-                document.form_action.dir_dest.value='';
-                document.form_action.chmod_arg.value=arg;
-                test(9);
-            }
-        }
-        function test_action(){
-            if (document.form_action.action.value != 0) return true;
-            else return false;
-        }
-        function test_prompt(arg){
-            cancel_copy_move();
-            var erro='';
-            var conf='';
-            if (arg == 1){
-                document.form_action.cmd_arg.value = prompt('".et('TypeDir').".');
-            } else if (arg == 2){
-                document.form_action.cmd_arg.value = prompt('".et('TypeArq').".');
-            } else if (arg == 71){
-                if (!is_anything_selected()) erro = '".et('NoSel')."...';
-                else document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."');
-            }
-            if (erro!=''){
-                document.form_action.cmd_arg.focus();
-                set_dir_list_warn(erro);
-            } else if(document.form_action.cmd_arg.value.length>0) {
+        if (erro!=''){
+            document.form_action.cmd_arg.focus();
+            set_dir_list_warn(erro);
+        } else if(conf!='') {
+            if(confirm(conf)) {
                 document.form_action.action.value = arg;
                 document.form_action.submit();
-            }
-        }
-        function strstr(haystack,needle){
-            var index = haystack.indexOf(needle);
-            return (index==-1)?false:index;
-        }
-        function valid_dest(dest,orig){
-            return (strstr(dest,orig)==false)?true:false;
-        }
-        function test(arg){
-            cancel_copy_move();
-            document.form_action.target='_self';
-            var erro='';
-            var conf='';
-            if (arg == 4){
-                if (!is_anything_selected()) erro = '".et('NoSel')."...';
-                conf = '".et('RemSel')." ?\\n';
-            } else if (arg == 5){
-                if (!is_anything_selected()) erro = '".et('NoSel')."...';
-                else if(document.form_action.dir_dest.value.length == 0) erro = '".et('NoDestDir').".';
-                else if(document.form_action.dir_dest.value == document.form_action.fm_current_dir.value) erro = '".et('DestEqOrig').".';
-                else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
-                conf = '".et('CopyTo')." \\' '+document.form_action.dir_dest.value+' \\' ?\\n';
-            } else if (arg == 6){
-                if (!is_anything_selected()) erro = '".et('NoSel')."...';
-                else if(document.form_action.dir_dest.value.length == 0) erro = '".et('NoDestDir').".';
-                else if(document.form_action.dir_dest.value == document.form_action.fm_current_dir.value) erro = '".et('DestEqOrig').".';
-                else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
-                conf = '".et('MoveTo')." \\' '+document.form_action.dir_dest.value+' \\' ?\\n';
-            } else if (arg == 9){
-                if (!is_anything_selected()) erro = '".et('NoSel')."...';
-                else if(document.form_action.chmod_arg.value.length == 0) erro = '".et('NoNewPerm').".';
-                //conf = '".et('AlterPermTo')." \\' '+document.form_action.chmod_arg.value+' \\' ?\\n';
-            } else if (arg == 73){
-                if (!is_anything_selected()) erro = '".et('NoSel')."...';
-                else document.form_action.target='frame1';
-            }
-            if (erro!=''){
-                document.form_action.cmd_arg.focus();
-                set_dir_list_warn(erro);
-            } else if(conf!='') {
-                if(confirm(conf)) {
-                    document.form_action.action.value = arg;
-                    document.form_action.submit();
-                } else {
-                    set_dir_list_warn(false);
-                }
             } else {
-                document.form_action.action.value = arg;
-                document.form_action.submit();
+                set_dir_list_warn(false);
             }
+        } else {
+            document.form_action.action.value = arg;
+            document.form_action.submit();
         }
-        //-->
-        </script>";
-        $out .= "
-            <tr style=\"border-bottom: 2px solid #eaeaea;\">
-            <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
-            <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
-                <div class=\"float-left\">
-                    <button class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
-                    <button class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
-                    <button type=button class=\"btn\" onclick=\"test_prompt(1)\" value=\"" . et('CreateDir') . "\"> <i class=\"fa fa-folder\"></i> ".et('CreateDir')."</button>
-                    <button type=button class=\"btn\" onclick=\"test_prompt(2)\" value=\"" . et('CreateArq') . "\"> <i class=\"fa fa-add-file\"></i> ".et('CreateArq')."</button>
-                    <button class=\"btn\" onclick=\"upload_form()\" value=\"" . et('Upload') . "\"><i class=\"fa fa-upload\"></i> " . et('Upload') . "</button>
-                    <button class=\"btn\" onclick=\"shell_form()\" value=\"" . et('Shell') . "\"><i class=\"fa fa-file-go\"></i> " . et('Shell') . "</button>
-                    <button class=\"btn\" onclick=\"portscan_form()\" value=\"" . et('Portscan') . "\"><i class=\"fa fa-find\"></i> " . et('Portscan') . "</button>
-                    <button type=button class=\"btn\" onclick=\"about_form()\" value=\"".et('About')."\"><i class=\"fa fa-glob\"></i> ".et('About')."</button>
-                </div>
-            </form>
-            </nobr>
-            </td>
-            </tr>";
-        $out .= "
-        <form name=\"form_action\" action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
-            <input type=hidden name=\"frame\" value=3>
-            <input type=hidden name=\"action\" value=0>
-            <input type=hidden name=\"dir_dest\" value=\"\">
-            <input type=hidden name=\"chmod_arg\" value=\"\">
-            <input type=hidden name=\"cmd_arg\" value=\"\">
-            <input type=hidden name=\"fm_current_dir\" value=\"$fm_current_dir\">
-            <input type=hidden name=\"dir_before\" value=\"$dir_before\">
-            <input type=hidden name=\"selected_dir_list\" value=\"\">
-            <input type=hidden name=\"selected_file_list\" value=\"\">";
-        $uplink = "";
-        if ($fm_current_dir != $fm_current_root){
-            $mat = explode(DIRECTORY_SEPARATOR,$fm_current_dir);
-            $dir_before = "";
-            for($x=0;$x<(count($mat)-2);$x++) $dir_before .= $mat[$x].DIRECTORY_SEPARATOR;
-            $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=$dir_before\"><<</a> ";
-        }
-        $breadcrumbs = array();
-        foreach (explode(DIRECTORY_SEPARATOR, $fm_current_dir) as $r) {
-            $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr($fm_current_dir, $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
-        }
-        $out .= "
-        <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding:8px;\" colspan=50><nobr>".$uplink."&nbsp;".implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs)."</nobr></td></tr>";
+    }
+    //-->
+    </script>";
+    $out .= "
+        <tr style=\"border-bottom: 2px solid #eaeaea;\">
+        <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
+        <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
+            <div class=\"float-left\">
+                <button class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
+                <button class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
+                <button type=button class=\"btn\" onclick=\"test_prompt(1)\" value=\"" . et('CreateDir') . "\"> <i class=\"fa fa-folder\"></i> ".et('CreateDir')."</button>
+                <button type=button class=\"btn\" onclick=\"test_prompt(2)\" value=\"" . et('CreateArq') . "\"> <i class=\"fa fa-add-file\"></i> ".et('CreateArq')."</button>
+                <button class=\"btn\" onclick=\"upload_form()\" value=\"" . et('Upload') . "\"><i class=\"fa fa-upload\"></i> " . et('Upload') . "</button>
+                <button class=\"btn\" onclick=\"shell_form()\" value=\"" . et('Shell') . "\"><i class=\"fa fa-file-go\"></i> " . et('Shell') . "</button>
+                <button class=\"btn\" onclick=\"portscan_form()\" value=\"" . et('Portscan') . "\"><i class=\"fa fa-find\"></i> " . et('Portscan') . "</button>
+                <button type=button class=\"btn\" onclick=\"about_form()\" value=\"".et('About')."\"><i class=\"fa fa-glob\"></i> ".et('About')."</button>
+            </div>
+        </form>
+        </nobr>
+        </td>
+        </tr>";
+    $out .= "
+    <form name=\"form_action\" action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
+        <input type=hidden name=\"frame\" value=3>
+        <input type=hidden name=\"action\" value=0>
+        <input type=hidden name=\"dir_dest\" value=\"\">
+        <input type=hidden name=\"chmod_arg\" value=\"\">
+        <input type=hidden name=\"cmd_arg\" value=\"\">
+        <input type=hidden name=\"fm_current_dir\" value=\"$fm_current_dir\">
+        <input type=hidden name=\"dir_before\" value=\"$dir_before\">
+        <input type=hidden name=\"selected_dir_list\" value=\"\">
+        <input type=hidden name=\"selected_file_list\" value=\"\">";
+    $uplink = "";
+    if ($fm_current_dir != $fm_current_root){
+        $mat = explode(DIRECTORY_SEPARATOR,$fm_current_dir);
+        $dir_before = "";
+        for($x=0;$x<(count($mat)-2);$x++) $dir_before .= $mat[$x].DIRECTORY_SEPARATOR;
+        if (strlen($dir_before)) $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=$dir_before\"><<</a>&nbsp;&nbsp;";
+    }
+    $breadcrumbs = array();
+    foreach (explode(DIRECTORY_SEPARATOR, $fm_current_dir) as $r) {
+        $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr($fm_current_dir, $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
+    }
+    $out .= "
+    <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding:8px;\" colspan=50><nobr>".$uplink.implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs)."</nobr></td></tr>";
+    if (!$io_error) {
         if($entry_count){
             $out .= "
                 <tr style=\"border-bottom: 2px solid #d4d2d2;\">
