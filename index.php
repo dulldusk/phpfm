@@ -327,9 +327,9 @@ if (!isset($fm_current_dir)){
 }
 $fm_current_root = rtrim($fm_current_root,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 $fm_current_dir = rtrim($fm_current_dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-fb_log('fm_root',$fm_root);
-fb_log('fm_current_root',$fm_current_root);
-fb_log('fm_current_dir',$fm_current_dir);
+//fb_log('fm_root',$fm_root);
+//fb_log('fm_current_root',$fm_current_root);
+//fb_log('fm_current_dir',$fm_current_dir);
 if (!isset($resolve_ids)){
     setcookie("resolve_ids", 0, time()+$cookie_cache_time, "/");
 } elseif (isset($set_resolve_ids)){
@@ -1145,7 +1145,7 @@ class tree_fs {
             $path = DIRECTORY_SEPARATOR.$path;
         }
         $path = replace_double(DIRECTORY_SEPARATOR,$path);
-        fb_log('path()',$id.' => '.$path);
+        //fb_log('path()',$id.' => '.$path);
         return $path;
     }
     protected function id($path) {
@@ -1155,7 +1155,7 @@ class tree_fs {
         $id = str_replace(DIRECTORY_SEPARATOR, '/', $id);
         $id = '/'.rtrim($id, '/');
         $id = replace_double('/',$id);
-        fb_log('id()',$path.' => '.$id);
+        //fb_log('id()',$path.' => '.$id);
         return $id;
     }
     public function lst($id, $with_root=false) {
@@ -3562,7 +3562,7 @@ function cmd_popen_exec($cmd, &$output){
         while (!feof($handle)) {
             $output .= fgets($handle, 4096);
         }
-        pclose($fp);
+        pclose($handle);
         return true;
     }
     return false;
@@ -3613,8 +3613,12 @@ function system_exec_cmd($cmd, &$output){
                     $exec_ok = true;
                 }
             } elseif (function_exists('system')) {
-                $last_output_line = @system($cmd,$output);
+                @ob_clean();
+                $last_output_line = @system($cmd,$exitCode);
+                $output = @ob_get_contents();
+                @ob_clean();
                 $exec_ok = ($last_output_line !== false);
+                $exec_ok = (intval($exitCode) == 0); // 0 = success
             } elseif (function_exists('passthru')) {
                 @ob_clean();
                 @passthru($cmd, $exitCode);
@@ -3736,7 +3740,7 @@ function response($result, $id, $error) {
                              'error'=> $error));
 }
 function shell_form(){
-    global $fm_current_dir,$shell_form,$cmd_arg,$fm_path_info;
+    global $fm_current_dir,$shell_form,$cmd_arg,$fm_path_info,$is_windows;
     switch ($shell_form){
         case 1:
             handle_json_rpc();
@@ -3748,9 +3752,17 @@ function shell_form(){
                 <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery.terminal.min.js\"></script>
                 <link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=jquery.terminal.min.css\" media=\"screen\" />
             ");
-            $hostname = function_exists('gethostname') ? gethostname() : '';
-            $user = function_exists('get_current_user') ? get_current_user() : '';
-            if (!strlen($user)) $user = getenv('USERNAME') ?: getenv('USER');
+            $hostname = function_exists('gethostname') ? @gethostname() : '';
+            $user = @getenv('USERNAME') ? : @getenv('USER');
+            if (!strlen($user)) {
+                $output='';
+                if (system_exec_cmd('whoami',$output)) {
+                    $user = trim($output);
+                    if ($is_windows && strpos($user,'\\') !== false){
+                        $user = ucfirst(substr($user,strpos($user,'\\')+1));
+                    }
+                }
+            }
             $group = '';
             $prompt_start = '[';
             if (strlen($user)) $prompt_start .= $user;
