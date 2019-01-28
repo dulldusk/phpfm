@@ -293,8 +293,8 @@ function fb_log(){
 }
 if (!strlen($fm_current_root)) {
     if ($is_windows) {
-        if (strpos($doc_root,":") !== false) $fm_current_root = ucfirst(substr($doc_root,0,strpos($doc_root,":")+1)."/"); // If doc_root has ":" take the drive letter
-        $fm_current_root = ucfirst($doc_root."/");
+        if (strpos($doc_root,":") !== false) $fm_current_root = ucfirst(substr($doc_root,0,strpos($doc_root,":")+1).DIRECTORY_SEPARATOR); // If doc_root has ":" take the drive letter
+        $fm_current_root = ucfirst($doc_root.DIRECTORY_SEPARATOR);
     } else {
         $fm_current_root = "/"; // Linux default show root
     }
@@ -327,9 +327,9 @@ if (!isset($fm_current_dir)){
 }
 $fm_current_root = rtrim($fm_current_root,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 $fm_current_dir = rtrim($fm_current_dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-//fb_log('fm_root',$fm_root);
-//fb_log('fm_current_root',$fm_current_root);
-//fb_log('fm_current_dir',$fm_current_dir);
+fb_log('fm_root',$fm_root);
+fb_log('fm_current_root',$fm_current_root);
+fb_log('fm_current_dir',$fm_current_dir);
 if (!isset($resolve_ids)){
     setcookie("resolve_ids", 0, time()+$cookie_cache_time, "/");
 } elseif (isset($set_resolve_ids)){
@@ -1145,7 +1145,7 @@ class tree_fs {
             $path = DIRECTORY_SEPARATOR.$path;
         }
         $path = replace_double(DIRECTORY_SEPARATOR,$path);
-        //fb_log('path()',$id.' => '.$path);
+        fb_log('path()',$id.' => '.$path);
         return $path;
     }
     protected function id($path) {
@@ -1155,7 +1155,7 @@ class tree_fs {
         $id = str_replace(DIRECTORY_SEPARATOR, '/', $id);
         $id = '/'.rtrim($id, '/');
         $id = replace_double('/',$id);
-        //fb_log('id()',$path.' => '.$id);
+        fb_log('id()',$path.' => '.$id);
         return $id;
     }
     public function lst($id, $with_root=false) {
@@ -1336,15 +1336,15 @@ function frame2(){
         var tree_loaded = false;
         var tree_auto_load_nodes = <?php echo json_encode($tree_auto_load_nodes); ?>;
         var tree_auto_load_node_curr = 0;
-        //console.log(tree_auto_load_nodes);
+        console.log(tree_auto_load_nodes);
         function tree_auto_load(){
             if (tree_auto_load_node_curr > tree_auto_load_nodes.length) return;
             var node_id = '/'+tree_auto_load_nodes.slice(0, tree_auto_load_node_curr+1).join('/');
             var node = $('#tree').find("[id='"+node_id+"']:eq(0)");
             tree_auto_load_node_curr++;
-            //console.log('tree_auto_load() '+tree_auto_load_node_curr);
-            //console.log('node_id: '+node_id);
-            //console.log(node);
+            console.log('tree_auto_load() '+tree_auto_load_node_curr);
+            console.log('node_id: '+node_id);
+            console.log(node);
             if (tree_auto_load_node_curr == tree_auto_load_nodes.length) {
                 if (node.length) {
                     $("#tree").jstree(true).open_node(node, function(){
