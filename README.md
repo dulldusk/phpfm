@@ -13,7 +13,7 @@ This project is my own way to give feedback, for everything that the open source
 - directory tree, with ajax loading
 - copy/move/delete/create/rename/edit/view/chmod files and folders
 - tar/zip/bzip/gzip with native support
-- code editor with syntax highlight, using Ace and Monokai theme.
+- code editor with syntax highlight, using Ace and Monokai theme
 - shell terminal emulator
 - portscan using PHP sockets
 - server info
