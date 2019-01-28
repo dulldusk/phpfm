@@ -1336,15 +1336,15 @@ function frame2(){
         var tree_loaded = false;
         var tree_auto_load_nodes = <?php echo json_encode($tree_auto_load_nodes); ?>;
         var tree_auto_load_node_curr = 0;
-        console.log(tree_auto_load_nodes);
+        //console.log(tree_auto_load_nodes);
         function tree_auto_load(){
             if (tree_auto_load_node_curr > tree_auto_load_nodes.length) return;
             var node_id = '/'+tree_auto_load_nodes.slice(0, tree_auto_load_node_curr+1).join('/');
             var node = $('#tree').find("[id='"+node_id+"']:eq(0)");
             tree_auto_load_node_curr++;
-            console.log('tree_auto_load() '+tree_auto_load_node_curr);
-            console.log('node_id: '+node_id);
-            console.log(node);
+            //console.log('tree_auto_load() '+tree_auto_load_node_curr);
+            //console.log('node_id: '+node_id);
+            //console.log(node);
             if (tree_auto_load_node_curr == tree_auto_load_nodes.length) {
                 if (node.length) {
                     $("#tree").jstree(true).open_node(node, function(){
@@ -3346,7 +3346,7 @@ function portscan_form(){
             } else {
                 if (portscan_curr_port<portscan_ports.length){
                     port = portscan_ports[portscan_curr_port];
-                    console.log('scan: '+ip+' '+port);
+                    //console.log('scan: '+ip+' '+port);
                     $.get(
                         '".$fm_path_info["basename"]."',
                         {
@@ -3819,7 +3819,7 @@ function shell_form(){
                             {
                                 greetings: get_boxed_text('PHP File Manager - Teminal Emulator'),
                                 prompt: function(callback) {
-                                    console.log(fm_current_dir);
+                                    //console.log(fm_current_dir);
                                     callback('<?php echo $prompt_start; ?> '+fm_current_dir+'<?php echo $prompt_end; ?>');
                                 },
                                 name: 'shell',
