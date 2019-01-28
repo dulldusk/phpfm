@@ -3829,7 +3829,7 @@ function shell_form(){
                                 }
                             },
                             {
-                                greetings: get_boxed_text('PHP File Manager - Shell Teminal Emulator'),
+                                greetings: get_boxed_text('PHP File Manager - Shell Terminal Emulator'),
                                 prompt: function(callback) {
                                     //console.log(fm_current_dir);
                                     callback('<?php echo $prompt_start; ?> '+fm_current_dir+'<?php echo $prompt_end; ?>');
