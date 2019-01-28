@@ -3755,9 +3755,7 @@ function shell_form(){
             $hostname = function_exists('gethostname') ? @gethostname() : '';
             $user = @getenv('USERNAME') ? : @getenv('USER');
             if (!strlen($user)) {
-                $output='';
-                if (system_exec_cmd('whoami',$output)) {
-                    $user = trim($output);
+                if (system_exec_cmd('whoami',$user)) {
                     if ($is_windows && strpos($user,'\\') !== false){
                         $user = ucfirst(substr($user,strpos($user,'\\')+1));
                     }
