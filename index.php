@@ -319,9 +319,13 @@ if (!isset($resolve_ids)){
     $resolve_ids=($resolve_ids)?0:1;
     setcookie("resolve_ids", $resolve_ids, time()+$cookie_cache_time, "/");
 }
-if ($resolve_ids){
-    @exec("cat /etc/passwd",$mat_passwd);
-    @exec("cat /etc/group",$mat_group);
+if (!$is_windows && $resolve_ids){
+    @system_exec_cmd("cat /etc/passwd",$passwd_file);
+    $passwd_array = explode(chr(10),$passwd_file);
+    @system_exec_cmd("cat /etc/group",$group_file);
+    $group_array = explode(chr(10),$group_file);
+    unset($passwd_file);
+    unset($group_file);
 }
 // +--------------------------------------------------
 // | BASE64 FILES
@@ -516,9 +520,9 @@ function execute_file(){
     $file = $fm_current_dir.$filename;
     if(file_exists($file)){
         echo "# ".$file."\n";
-        exec($file,$mat);
-        if (count($mat)) echo trim(implode("\n",$mat));
-    } else alert(et('FileNotFound').": ".$file);
+        system_exec_cmd($file,$output);
+        echo $output;
+    } else echo(et('FileNotFound').": ".$file);
 }
 function save_upload($temp_file,$filename,$dir_dest) {
     global $upload_ext_filter;
@@ -691,22 +695,22 @@ function check_limit($new_filesize=0) {
     return false;
 }
 function get_user($arg) {
-    global $mat_passwd;
+    global $passwd_array;
     $aux = "x:".trim($arg).":";
-    for($x=0;$x<count($mat_passwd);$x++){
-        if (strstr($mat_passwd[$x],$aux)){
-            $mat = explode(":",$mat_passwd[$x]);
+    for($x=0;$x<count($passwd_array);$x++){
+        if (strpos($passwd_array[$x],$aux) !== false){
+            $mat = explode(":",$passwd_array[$x]);
             return $mat[0];
         }
     }
     return $arg;
 }
 function get_group($arg) {
-    global $mat_group;
+    global $group_array;
     $aux = "x:".trim($arg).":";
-    for($x=0;$x<count($mat_group);$x++){
-        if (strstr($mat_group[$x],$aux)){
-            $mat = explode(":",$mat_group[$x]);
+    for($x=0;$x<count($group_array);$x++){
+        if (strpos($group_array[$x],$aux) !== false){
+            $mat = explode(":",$group_array[$x]);
             return $mat[0];
         }
     }
@@ -3436,7 +3440,7 @@ function get_absolute_path($path) {
     if (!$is_windows) $path = DIRECTORY_SEPARATOR.$path;
     return $path;
 }
-function cmd_proc_exec($cmd, &$stdout, &$stderr) {
+function cmd_proc_open_exec($cmd, &$stdout, &$stderr) {
     $tmp_dir = ini_get('session.save_path') ? ini_get('session.save_path') : sys_get_temp_dir();
     $outfile = tempnam($tmp_dir,"cmd");
     $errfile = tempnam($tmp_dir,"cmd");
@@ -3454,6 +3458,80 @@ function cmd_proc_exec($cmd, &$stdout, &$stderr) {
     @unlink($outfile);
     @unlink($errfile);
     return $exit;
+}
+function cmd_popen_exec($cmd, &$output){
+    if ($handle = popen($cmd,"r")){
+        while (!feof($handle)) {
+            $output .= fgets($handle, 4096);
+        }
+        pclose($fp);
+        return true;
+    }
+    return false;
+}
+if($is_windows && !function_exists('pcntl_exec') && class_exists('COM')){
+    function pcntl_exec($path, $args=array()){
+        if(is_string($args)) $args = array($args);
+        if(count($args)) $path = '"'.$path.'"';
+        $shell = new COM('WScript.Shell');
+        if ($shell->run($path.(count($args) ? ' '.implode(' ',$args) : ''),0,true)) return NULL;
+        else return false;
+    }
+}
+function cmd_pcntl_exec($cmd, $args=array()){ // Does not provide output, could throw it to a file!
+    if(is_string($args)) $args = array($args);
+    $envs = array();
+    if (pcntl_exec($cmd, $args, $envs) === NULL) return true;
+    return false;
+}
+function system_exec_cmd($cmd, &$output){
+    $exec_ok = false;
+    if (strlen($cmd)) {
+        if (function_exists('proc_open')) {
+            $stdout = $stderr = '';
+            $exitCode = cmd_proc_open_exec($cmd, $stdout, $stderr);
+            $exec_ok = (intval($exitCode) == 0); // 0 = success
+            $output = trim($stdout);
+            if (strlen($stderr)) {
+                if (strlen($output)) $output .= "\n";
+                $output .= trim($stderr);
+            }
+        } else {
+            if (strpos($cmd,'2>&1') === false) {
+                $cmd .= ' 2>&1';
+            }
+            if (function_exists('exec')) {
+                $outputArr = array();
+                $exitCode = 1;
+                @exec($cmd, $outputArr, $exitCode);
+                $exec_ok = (intval($exitCode) == 0); // 0 = success
+                $output = trim(implode("\n",$outputArr));
+            } elseif (function_exists('shell_exec')) {
+                $output = @shell_exec($cmd);
+                if ($output === NULL){
+                    $output = '';
+                    $exec_ok = false;
+                } else {
+                    $exec_ok = true;
+                }
+            } elseif (function_exists('system')) {
+                $last_output_line = @system($cmd,$output);
+                $exec_ok = ($last_output_line !== false);
+            } elseif (function_exists('passthru')) {
+                @ob_clean();
+                @passthru($cmd, $exitCode);
+                $output = @ob_get_contents();
+                @ob_clean();
+                $exec_ok = (intval($exitCode) == 0); // 0 = success
+            } elseif (function_exists('popen')) {
+                $exec_ok = cmd_popen_exec($cmd, $output);
+            } else {
+                $output = "PHP exec functions are disabled on server.";
+            }
+        }
+    }
+    $output = trim($output);
+    return $exec_ok;
 }
 function handle_json_rpc() {
     global $fm_current_dir,$cmd_line,$is_windows;
@@ -3526,37 +3604,7 @@ function handle_json_rpc() {
             }
         }
         $output = '';
-        if (strlen($cmd_line)) {
-            if (function_exists('proc_open')) {
-                $stdout = '';
-                $stderr = '';
-                $exitCode = cmd_proc_exec($cmd_line, $stdout, $stderr);
-                $exec_ok = (intval($exitCode) == 0); // 0 = success
-                $output = trim($stdout);
-                if (strlen($stderr)) {
-                    if (strlen($output)) $output .= "\n";
-                    $output .= trim($stderr);
-                }
-            } else {
-                if (strpos($cmd_line,'2>&1') === false) {
-                    $cmd_line .= ' 2>&1';
-                }
-                if (function_exists('exec')) {
-                    $outputArr = array();
-                    $exitCode = 1;
-                    @exec($cmd_line, $outputArr, $exitCode);
-                    $exec_ok = (intval($exitCode) == 0); // 0 = success
-                    $output = trim(implode("\n",$outputArr));
-                } elseif (function_exists('shell_exec')) {
-                    $output = trim(@shell_exec($cmd_line));
-                } elseif (function_exists('system')) {
-                    $last_line = trim(@system($cmd_line,$output));
-                    $exec_ok = ($last_line !== false);
-                } else {
-                    throw new JsonRpcExeption(103,"Exec functions disabled on server");
-                }
-            }
-        }
+        $exec_ok = system_exec_cmd($cmd_line, $output);
         echo response($output, $id, null);
     } catch (JsonRpcExeption $e) {
         // exteption with error code
