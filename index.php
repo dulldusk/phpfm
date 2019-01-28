@@ -1813,7 +1813,7 @@ function dir_list_form() {
         openModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."',1024,768);
     }
     function shell_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=9','".et('Shell')."',1024,768);
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',1024,768);
     }
     function portscan_form(){
         openModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."',1024,768);
@@ -2866,7 +2866,7 @@ function config_form(){
         $timezone_opts[] = 'Etc/GMT+11';
         $timezone_opts[] = 'Etc/GMT+12';
         echo "
-        <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\">
+        <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" autocomplete=\"off\">
         <input type=hidden name=\"newpassvar\" value=\"".$newpassvar."\">
         <table border=0 cellspacing=0 cellpadding=5 align=left style=\"padding:5px;\">
         <input type=hidden name=action value=2>
@@ -2874,7 +2874,7 @@ function config_form(){
         <tr><td align=right width=1>".et('FileMan').":<td>".et('Version')." ".$version." (".get_size($fm_file).")</td></tr>
         <tr><td align=right width=1><nobr>".et('DocRoot').":</nobr><td>".$doc_root."</td></tr>
         <tr><td align=right width=1><nobr>".et('PHPOpenBasedir').":</nobr><td>".(count($open_basedirs)?implode("<br>\n",$open_basedirs):et('PHPOpenBasedirFullAccess'))."</td></tr>
-        <tr><td align=right width=1>".et('FMRoot').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" name=\"newfmroot\" value=\"".html_encode($fm_root)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\"></td></tr>
+        <tr><td align=right width=1>".et('FMRoot').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" id=\"newfmroot\" name=\"newfmroot\" readonly autocomplete=\"off\" value=\"".html_encode($fm_root)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\"></td></tr>
         <tr><td align=right>".et('Timezone').":<td>
             <select name=newtimezone style=\"width:410px; padding:5px;\">
                 <option value=''>System Default";
@@ -2914,12 +2914,12 @@ function config_form(){
         if ($cfg->data['auth_pass'] == md5('')) {
             echo "
             <tr><td align=right>".et('Pass').":<td><input type=button class=\"btn noIcon\" value=\"".et('SetPass')."\" onclick=\"$(this).hide(); $('#".$newpassvar."').show(); $('#".$newpassvar."').val(''); $('#".$newpassvar."').focus();\">
-                <input type=password style=\"display:none; width:392px; padding:5px 8px;\" name=\"".$newpassvar."\" id=\"".$newpassvar."\" autocomplete=\"off\" value=\"\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
+                <input type=password style=\"display:none; width:392px; padding:5px 8px;\" name=\"".$newpassvar."\" id=\"".$newpassvar."\" readonly autocomplete=\"off\" value=\"\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
             </td></tr>";
         } else {
             echo "
             <tr><td align=right>".et('Pass').":<td><input type=button class=\"btn noIcon\" value=\"".et('ChangePass')."\" onclick=\"$(this).hide(); $('#".$newpassvar."').show(); $('#".$newpassvar."').val(''); $('#".$newpassvar."').focus();\">
-                <input type=password style=\"display:none; width:392px; padding:5px 8px;\" name=\"".$newpassvar."\" id=\"".$newpassvar."\" autocomplete=\"off\" value=\"\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
+                <input type=password style=\"display:none; width:392px; padding:5px 8px;\" name=\"".$newpassvar."\" id=\"".$newpassvar."\" readonly autocomplete=\"off\" value=\"\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
             </td></tr>";
         }
         echo "
@@ -2940,12 +2940,14 @@ function config_form(){
             set_select(document.config_form.newtimezone,'".$cfg->data['timezone']."');
             set_select(document.config_form.newerror,'".$cfg->data['error_reporting']."');
             function test_config_form(arg){
-                if (!$('#".$newpassvar."').is(':visible')){
-                    $('#".$newpassvar."').val('');
-                }
                 document.config_form.config_action.value = arg;
                 document.config_form.submit();
             }
+            // To avoid autofill, because autocomplete=off simply does not work..
+            window.setTimeout(function(){
+                $('#newfmroot').removeAttr('readonly');
+                $('#".$newpassvar."').removeAttr('readonly');
+            },250);
         //-->
         </script>";
     }
