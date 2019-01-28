@@ -2,7 +2,7 @@
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
- | phpFileManager 1.7.1
+ | phpFileManager 1.7.2
  | By Fabricio Seger Kolling
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.1';
+$version = '1.7.2';
 $charset = 'UTF-8';
 $quota_mb = 0;
 $upload_ext_filter = array();
@@ -327,9 +327,9 @@ if (!isset($fm_current_dir)){
 }
 $fm_current_root = rtrim($fm_current_root,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 $fm_current_dir = rtrim($fm_current_dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-fb_log('fm_root',$fm_root);
-fb_log('fm_current_root',$fm_current_root);
-fb_log('fm_current_dir',$fm_current_dir);
+//fb_log('fm_root',$fm_root);
+//fb_log('fm_current_root',$fm_current_root);
+//fb_log('fm_current_dir',$fm_current_dir);
 if (!isset($resolve_ids)){
     setcookie("resolve_ids", 0, time()+$cookie_cache_time, "/");
 } elseif (isset($set_resolve_ids)){
@@ -1137,34 +1137,40 @@ class tree_fs {
         return $temp;
     }
     protected function path($id) {
+        global $is_windows;
         $path = str_replace('/', DIRECTORY_SEPARATOR, $id);
         $path = $this->real($this->base.DIRECTORY_SEPARATOR.$path);
         $path = rtrim($path, DIRECTORY_SEPARATOR);
+        if (!$is_windows) {
+            $path = DIRECTORY_SEPARATOR.$path;
+        }
+        $path = replace_double(DIRECTORY_SEPARATOR,$path);
         //fb_log('path()',$id.' => '.$path);
         return $path;
     }
     protected function id($path) {
+        global $is_windows;
         $id = $this->real($path);
         $id = substr($id, strlen($this->base));
         $id = str_replace(DIRECTORY_SEPARATOR, '/', $id);
-        $id = rtrim($id, '/');
-        $id = strlen($id) ? $id : '/';
+        $id = '/'.rtrim($id, '/');
+        $id = replace_double('/',$id);
         //fb_log('id()',$path.' => '.$id);
         return $id;
     }
     public function lst($id, $with_root=false) {
-        global $is_windows;
-        $dir = $this->path($id);
-        $lst = @scandir($dir);
-        if(!$lst) { fb_log('Could not list path: '.$dir); }
+        $path = $this->path($id);
+        $lst = @scandir($path);
+        if(!$lst) { fb_log('Could not list path: '.$path); }
         $res = array();
         foreach($lst as $item) {
             if($item == '.' || $item == '..' || $item === null) { continue; }
-            if(is_dir($dir.DIRECTORY_SEPARATOR.$item)) {
-                $res[] = array('text' => utf8_convert($item), 'children' => true,  'id' => utf8_convert($this->id($dir.DIRECTORY_SEPARATOR.$item)), 'icon' => 'folder');
+            $item_path = rtrim($path,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$item;
+            if(is_dir($item_path)) {
+                $res[] = array('text' => utf8_convert($item), 'children' => true,  'id' => utf8_convert($this->id($item_path)), 'icon' => 'folder');
             }
         }
-        if($with_root && $this->id($dir) === '/') {
+        if($with_root && $this->id($path) == '/') {
             $res = array(array('text' => utf8_convert($this->base), 'children' => $res, 'id' => '/', 'icon'=>'folder', 'state' => array('opened' => true, 'disabled' => false)));
         }
         return $res;
@@ -1174,11 +1180,11 @@ class tree_fs {
             $id = array_map(array($this, 'id'), explode(':', $id));
             return array('type'=>'multiple', 'content'=> 'Multiple selected: ' . implode(' ', $id));
         }
-        $dir = $this->path($id);
-        if(is_dir($dir)) {
+        $path = $this->path($id);
+        if(is_dir($path)) {
             return array('type'=>'folder', 'content'=> $id);
         }
-        fb_log('Not a valid selection: ' . $dir);
+        fb_log('Not a valid selection: '.$path);
     }
 }
 function frame2(){
@@ -1189,8 +1195,9 @@ function frame2(){
             $resul = null;
             switch($_GET['operation']) {
                 case 'get_node':
-                    $node = isset($_GET['id']) && $_GET['id'] !== '#' ? $_GET['id'] : '/';
-                    $resul = $tree_fs->lst($node, true);
+                    $node = (strlen($_GET['id']) && $_GET['id'] !== '#') ? $_GET['id'] : '/';
+                    $with_root = true;
+                    $resul = $tree_fs->lst($node, $with_root);
                     break;
                 default:
                     fb_log('Unsupported operation: '.$_GET['operation']);
@@ -1320,19 +1327,24 @@ function frame2(){
         <div id="container" role="main">
             <div id="tree"></div>
         </div>
+        <?php
+            $tree_auto_load_nodes = substr($fm_current_dir,strlen($fm_current_root));
+            $tree_auto_load_nodes = trim($tree_auto_load_nodes,DIRECTORY_SEPARATOR);
+            $tree_auto_load_nodes = explode(DIRECTORY_SEPARATOR,$tree_auto_load_nodes);
+        ?>
         <script>
         var tree_loaded = false;
-        var tree_auto_load_nodes = <?php echo json_encode(explode(DIRECTORY_SEPARATOR,trim(str_replace($fm_current_root,'',$fm_current_dir),DIRECTORY_SEPARATOR))); ?>;
+        var tree_auto_load_nodes = <?php echo json_encode($tree_auto_load_nodes); ?>;
         var tree_auto_load_node_curr = 0;
         //console.log(tree_auto_load_nodes);
         function tree_auto_load(){
             if (tree_auto_load_node_curr > tree_auto_load_nodes.length) return;
             var node_id = '/'+tree_auto_load_nodes.slice(0, tree_auto_load_node_curr+1).join('/');
             var node = $('#tree').find("[id='"+node_id+"']:eq(0)");
-            //console.log('tree_auto_load()');
-            //console.log(node_id);
-            //console.log(node);
             tree_auto_load_node_curr++;
+            //console.log('tree_auto_load() '+tree_auto_load_node_curr);
+            //console.log('node_id: '+node_id);
+            //console.log(node);
             if (tree_auto_load_node_curr == tree_auto_load_nodes.length) {
                 if (node.length) {
                     $("#tree").jstree(true).open_node(node, function(){
@@ -2862,7 +2874,7 @@ function config_form(){
         <tr><td align=right width=1>".et('FileMan').":<td>".et('Version')." ".$version." (".get_size($fm_file).")</td></tr>
         <tr><td align=right width=1><nobr>".et('DocRoot').":</nobr><td>".$doc_root."</td></tr>
         <tr><td align=right width=1><nobr>".et('PHPOpenBasedir').":</nobr><td>".(count($open_basedirs)?implode("<br>\n",$open_basedirs):et('PHPOpenBasedirFullAccess'))."</td></tr>
-        <tr><td align=right width=1>".et('FMRoot').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" name=\"newfmroot\" value=\"".html_encode($fm_root)."\" onkeypress=\"enterSubmit(event,'test_config_form(2)')\"></td></tr>
+        <tr><td align=right width=1>".et('FMRoot').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" name=\"newfmroot\" value=\"".html_encode($fm_root)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\"></td></tr>
         <tr><td align=right>".et('Timezone').":<td>
             <select name=newtimezone style=\"width:410px; padding:5px;\">
                 <option value=''>System Default";
