@@ -5,11 +5,6 @@ phpFileManager is a complete filesystem management tool on a single file.
 This is a tool meant for rapid file access, and also to verify the server php configuration and security.
 All dependencies are contained within the script itself, so it can work normally on offline environments.
 
-The script contains a great serie of special functions and classes, that can be used on other projects.
-Some were collected and improved, other developed by myself along the years.
-There is no doubt, that any PHP developer will find something very useful among them.
-This project is my own way to give feedback, for everything that the open source community is about.
-
 ## Features:
 - directory tree, with ajax loading
 - copy/move/delete/create/rename/edit/view/chmod files and folders
