@@ -7,7 +7,7 @@
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-01-28
+ | Last Changed: 2019-02-02
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -1246,7 +1246,7 @@ function frame2(){
         }
         function go_tree(arg) {
             if (flag) {
-                parent.frame3.set_dir_dest(arg+'<?php echo addslashes(DIRECTORY_SEPARATOR) ?>');
+                parent.frame3.set_dir_dest(arg+'".addslashes(DIRECTORY_SEPARATOR)."');
                 flag = false;
             } else {
                 parent.frame3.location.href='".addslashes($fm_path_info["basename"])."?frame=3&fm_current_root=".rawurlencode($fm_current_root)."&fm_current_dir='+encodeURIComponent(arg)+'".rawurlencode(DIRECTORY_SEPARATOR)."';
