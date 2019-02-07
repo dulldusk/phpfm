@@ -1,4 +1,5 @@
 <?php
+//{"lang":"","fm_root":"","timezone":"","auth_pass":"fe01ce2a7fbac8fafaed7c982a04e229","error_reporting":1}
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
@@ -7,7 +8,7 @@
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-02-02
+ | Last Changed: 2019-02-07
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -37,6 +38,7 @@
 // +--------------------------------------------------
 $version = '1.7.3';
 $charset = 'UTF-8';
+$debug_mode = false;
 $quota_mb = 0;
 $upload_ext_filter = array();
 $download_ext_filter = array();
@@ -161,8 +163,9 @@ function get_client_ip() {
 $ip = @get_client_ip();
 $lan_ip = @socket_get_lan_ip();
 function getServerURL() {
-    $url = ($_SERVER["HTTPS"] == "on")?"https://":"http://";
-    $url .= $_SERVER["SERVER_NAME"]; // variável do servidor, $_SERVER["HTTP_HOST"] é equivalente
+    $url = (lowercase($_SERVER["HTTPS"]) == "on")?"https://":"http://";
+    if (strlen($_SERVER["SERVER_NAME"])) $url .= $_SERVER["SERVER_NAME"];
+    elseif (strlen($_SERVER["HTTP_HOST"])) $url .= $_SERVER["HTTP_HOST"];
     if ($_SERVER["SERVER_PORT"] != "80" && $_SERVER["SERVER_PORT"] != "443") $url .= ":".$_SERVER["SERVER_PORT"];
     return $url;
 }
@@ -313,6 +316,16 @@ if (count($open_basedirs)){
         }
     }
     if (!$fm_current_root_ok) {
+        $fm_path = rtrim($fm_path_info["dirname"],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+        foreach ($open_basedirs as $open_basedir) {
+            if (strpos($fm_path,$open_basedir) !== false) {
+                $fm_current_root = $open_basedir;
+                $fm_current_root_ok = true;
+                break;
+            }
+        }
+    }
+    if (!$fm_current_root_ok){
         $fm_current_root = $open_basedirs[0];
     }
 }
@@ -465,11 +478,16 @@ if ($auth_pass == md5('') || $loggedon==$auth_pass){
 // | File System
 // +--------------------------------------------------
 function total_size($arg) {
+    global $debug_mode;
+    if ($debug_mode) {
+        fb_log('total_size',$arg);
+        return 0;
+    }
     $total = 0;
     if (file_exists($arg)) {
         if (is_dir($arg)) {
             $handle = opendir(fs_encode($arg));
-            while($aux = readdir($handle)) {
+            while(($aux = readdir($handle)) !== false) {
                 if ($aux != "." && $aux != "..") $total += total_size($arg."/".$aux);
             }
             @closedir($handle);
@@ -478,25 +496,37 @@ function total_size($arg) {
     return $total;
 }
 function total_delete($arg) {
+    global $debug_mode;
+    if ($debug_mode) {
+        fb_log('total_delete',$arg);
+        return;
+    }
     if (file_exists($arg)) {
         @chmod($arg,0755);
         if (is_dir($arg)) {
             $handle = opendir(fs_encode($arg));
-            while($aux = readdir($handle)) {
+            while(($aux = readdir($handle)) !== false) {
                 if ($aux != "." && $aux != "..") total_delete($arg."/".$aux);
             }
             @closedir($handle);
-            rmdir($arg);
-        } else unlink($arg);
+            @rmdir($arg);
+        } else {
+            @unlink($arg);
+        }
     }
 }
 function total_copy($orig,$dest) {
+    global $debug_mode;
+    if ($debug_mode) {
+        fb_log('total_copy',$orig.' => '.$dest);
+        return;
+    }
     $ok = true;
     if (file_exists($orig)) {
         if (is_dir($orig)) {
             mkdir($dest,0755);
             $handle = @opendir(fs_encode($orig));
-            while(($aux = readdir($handle))&&($ok)) {
+            while(($aux = readdir($handle)) !== false && $ok) {
                 if ($aux != "." && $aux != "..") $ok = total_copy($orig."/".$aux,$dest."/".$aux);
             }
             @closedir($handle);
@@ -505,12 +535,21 @@ function total_copy($orig,$dest) {
     return $ok;
 }
 function total_move($orig,$dest) {
+    global $debug_mode;
+    if ($debug_mode) {
+        fb_log('total_move',$orig.' => '.$dest);
+        return;
+    }
     // Just why doesn't it has a MOVE alias?!
     return rename((string)$orig,(string)$dest);
 }
 function download(){
-    global $fm_current_dir,$filename;
+    global $fm_current_dir,$filename,$debug_mode;
     $file = $fm_current_dir.$filename;
+    if ($debug_mode) {
+        fb_log('download',$file);
+        return;
+    }
     if(file_exists($file)){
         $is_denied = false;
         foreach($download_ext_filter as $key=>$ext){
@@ -533,7 +572,11 @@ function download(){
     } else alert(et('FileNotFound').": ".$file);
 }
 function execute_file(){
-    global $fm_current_dir,$filename;
+    global $fm_current_dir,$filename,$debug_mode;
+    if ($debug_mode) {
+        fb_log('execute_file',$filename);
+        return;
+    }
     header("Content-type: text/plain");
     $file = $fm_current_dir.$filename;
     if(file_exists($file)){
@@ -543,7 +586,11 @@ function execute_file(){
     } else echo(et('FileNotFound').": ".$file);
 }
 function save_upload($temp_file,$filename,$dir_dest) {
-    global $upload_ext_filter;
+    global $upload_ext_filter,$debug_mode;
+    if ($debug_mode) {
+        fb_log('save_upload',$temp_file.' => '.$dir_dest.$filename);
+        return;
+    }
     $filename = remove_special_chars($filename);
     $file = $dir_dest.$filename;
     $filesize = filesize($temp_file);
@@ -574,33 +621,37 @@ function save_upload($temp_file,$filename,$dir_dest) {
     return $out;
 }
 function zip_extract(){
-  global $cmd_arg,$fm_current_dir;
-  $zip = zip_open($fm_current_dir.$cmd_arg);
-  if ($zip) {
-    while ($zip_entry = zip_read($zip)) {
-        if (zip_entry_filesize($zip_entry)) {
-            $complete_path = $path.dirname(zip_entry_name($zip_entry));
-            $complete_name = $path.zip_entry_name($zip_entry);
-            if(!file_exists($complete_path)) {
-                $tmp = '';
-                foreach(explode(DIRECTORY_SEPARATOR,$complete_path) AS $k) {
-                    $tmp .= $k.DIRECTORY_SEPARATOR;
-                    if(!file_exists($tmp)) {
-                        @mkdir($fm_current_dir.$tmp, 0755);
+    global $cmd_arg,$fm_current_dir,$debug_mode;
+    if ($debug_mode) {
+        fb_log('zip_extract',$fm_current_dir.$cmd_arg);
+        return;
+    }
+    $zip = zip_open($fm_current_dir.$cmd_arg);
+    if ($zip) {
+        while ($zip_entry = zip_read($zip)) {
+            if (zip_entry_filesize($zip_entry)) {
+                $complete_path = $path.dirname(zip_entry_name($zip_entry));
+                $complete_name = $path.zip_entry_name($zip_entry);
+                if(!file_exists($complete_path)) {
+                    $tmp = '';
+                    foreach(explode(DIRECTORY_SEPARATOR,$complete_path) AS $k) {
+                        $tmp .= $k.DIRECTORY_SEPARATOR;
+                        if(!file_exists($tmp)) {
+                            @mkdir($fm_current_dir.$tmp, 0755);
+                        }
                     }
                 }
+                if (zip_entry_open($zip, $zip_entry, "r")) {
+                    if ($fd = fopen($fm_current_dir.$complete_name, 'w')){
+                        fwrite($fd, zip_entry_read($zip_entry, zip_entry_filesize($zip_entry)));
+                        fclose($fd);
+                    } else echo "fopen($fm_current_dir.$complete_name) error<br>";
+                    zip_entry_close($zip_entry);
+                } else echo "zip_entry_open($zip,$zip_entry) error<br>";
             }
-            if (zip_entry_open($zip, $zip_entry, "r")) {
-                if ($fd = fopen($fm_current_dir.$complete_name, 'w')){
-                    fwrite($fd, zip_entry_read($zip_entry, zip_entry_filesize($zip_entry)));
-                    fclose($fd);
-                } else echo "fopen($fm_current_dir.$complete_name) error<br>";
-                zip_entry_close($zip_entry);
-            } else echo "zip_entry_open($zip,$zip_entry) error<br>";
         }
+        zip_close($zip);
     }
-    zip_close($zip);
-  }
 }
 // +--------------------------------------------------
 // | Data Formating
@@ -748,8 +799,8 @@ function lowercase($str){
 function html_header($header=""){
     global $charset,$fm_color,$fm_path_info;
     echo "
-    <!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
-    <html xmlns=\"http://www.w3.org/1999/xhtml\">
+    <!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"//www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
+    <html xmlns=\"//www.w3.org/1999/xhtml\">
     <head>
     <meta http-equiv=\"content-type\" content=\"text/html; charset=".$charset."\" />
     <link rel=\"shortcut icon\" href=\"".$fm_path_info["basename"]."?action=99&filename=favicon.ico\" type=\"image/x-icon\">
@@ -1516,7 +1567,7 @@ function dir_list_form() {
         $entry_count = 0;
         $total_size = 0;
         $entry_list = array();
-        while ($entry = readdir($opdir)) {
+        while (($entry = readdir($opdir)) !== false) {
           if (($entry != ".")&&($entry != "..")){
             $entry_list[$entry_count]["size"] = 0;
             $entry_list[$entry_count]["sizet"] = 0;
@@ -2147,11 +2198,11 @@ function dir_list_form() {
             <div style=\"float:left;\">
                 <span>".$file_count." ".et('File_s')." = ".format_size($total_size)."</span>";
                 if ($quota_mb) {
-                $out .= "
-                <br /><span>".et('Partition')." = ".format_size(($quota_mb*1024*1024))." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span>";
+                    $out .= "
+                    <br /><span>".et('Partition')." = ".format_size(($quota_mb*1024*1024))." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span>";
                 } else {
-                $out .= "
-                <br /><span>".et('Partition')." = ".format_size(disk_total_space($fm_current_dir))." / ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span>";
+                    $out .= "
+                    <br /><span>".et('Partition')." = ".format_size(disk_total_space($fm_current_dir))." / ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span>";
                 }
                 $tf = getmicrotime();
                 $tt = ($tf - $ti);
@@ -3392,7 +3443,7 @@ function about_form(){
             border: 0px solid #ccc;
         }
     </style>
-    <iframe id=\"aboutIframe\" name=\"aboutIframe\" src=\"http://www.dulldusk.com/phpfm?version=".$version."\" scrolling=\"yes\" frameborder=\"0\"></iframe>
+    <iframe id=\"aboutIframe\" name=\"aboutIframe\" src=\"//www.dulldusk.com/phpfm?version=".$version."\" scrolling=\"yes\" frameborder=\"0\"></iframe>
     </body>\n</html>";
 }
 // +--------------------------------------------------
@@ -4454,7 +4505,8 @@ class archive {
         return $files;
     }
     function parse_dir($dirname) {
-        if ($this->options['storepaths'] == 1 && !preg_match("/^(\.+\/*)+$/", $dirname))
+        $files = array();
+        if ($this->options['storepaths'] == 1 && !preg_match("/^(\.+\/*)+$/", $dirname)) {
             $files = array(
                 array(
                     'name' => $dirname,
@@ -4463,29 +4515,29 @@ class archive {
                     'stat' => stat($dirname)
                 )
             );
-        else
-            $files = array();
-        $dir = @opendir($dirname);
-        while ($file = @readdir($dir)) {
-            $fullname = $dirname . "/" . $file;
-            if ($file == "." || $file == "..")
-                continue;
-            else if (@is_dir($fullname)) {
-                if (empty($this->options['recurse']))
-                    continue;
-                $temp = $this->parse_dir($fullname);
-                foreach ($temp as $file2)
-                    $files[] = $file2;
-            } else if (@file_exists($fullname))
-                $files[] = array(
-                    'name' => $fullname,
-                    'name2' => $this->options['prepend'] . preg_replace("/(\.+\/+)+/", "", ($this->options['storepaths'] == 0 && strstr($fullname, "/")) ? substr($fullname, strrpos($fullname, "/") + 1) : $fullname),
-                    'type' => @is_link($fullname) && $this->options['followlinks'] == 0 ? 2 : 0,
-                    'ext' => substr($file, strrpos($file, ".")),
-                    'stat' => stat($fullname)
-                );
         }
-        @closedir($dir);
+        if ($dir = @opendir($dirname)){
+            while (($file = @readdir($dir)) !== false) {
+                $fullname = $dirname . "/" . $file;
+                if ($file == "." || $file == "..")
+                    continue;
+                else if (@is_dir($fullname)) {
+                    if (empty($this->options['recurse']))
+                        continue;
+                    $temp = $this->parse_dir($fullname);
+                    foreach ($temp as $file2)
+                        $files[] = $file2;
+                } else if (@file_exists($fullname))
+                    $files[] = array(
+                        'name' => $fullname,
+                        'name2' => $this->options['prepend'] . preg_replace("/(\.+\/+)+/", "", ($this->options['storepaths'] == 0 && strstr($fullname, "/")) ? substr($fullname, strrpos($fullname, "/") + 1) : $fullname),
+                        'type' => @is_link($fullname) && $this->options['followlinks'] == 0 ? 2 : 0,
+                        'ext' => substr($file, strrpos($file, ".")),
+                        'stat' => stat($fullname)
+                    );
+            }
+            @closedir($dir);
+        }
         return $files;
     }
     function sort_files($a, $b) {
