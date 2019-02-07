@@ -1506,9 +1506,9 @@ function dir_list_form() {
             border: 1px solid #ccc;
             box-shadow: 0 0 3px rgba(0, 0, 0, 0.15);
             position: absolute;
-            top: 50%;
+            top: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, 20px);
             z-index: 32000;
             display: none;
         }
