@@ -5,6 +5,8 @@ phpFileManager is a complete filesystem management tool on a single file.
 This is a tool meant for rapid file access, and also to verify the server php configuration and security.
 All dependencies are contained within the script itself, so it can work normally on offline environments.
 
+Online Demo: https://phpfm-demo.000webhostapp.com
+
 ## Features:
 - directory tree, with ajax loading
 - copy/move/delete/create/rename/edit/view/chmod files and folders
