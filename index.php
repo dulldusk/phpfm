@@ -1,5 +1,4 @@
 <?php
-//{"lang":"","fm_root":"","timezone":"","auth_pass":"fe01ce2a7fbac8fafaed7c982a04e229","error_reporting":1}
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
