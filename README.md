@@ -6,7 +6,7 @@ This is a tool meant for rapid file access, and also to verify the server php co
 All dependencies are contained within the script itself, so it can work normally on offline environments.
 
 Online Demo: https://phpfm-demo.000webhostapp.com
-This public demo installation serves to show any skeptic, that phpFileManager is harmless, if the webserver is properly configured. Feel free to mess around, the demo reset itself automatically every 30 min.
+This public demo installation serves to show any skeptic, that phpFileManager is harmless, if the webserver is properly configured. Feel free to mess around, the demo will reset itself automatically every 30 min.
 
 ## Features:
 - directory tree, with ajax loading
