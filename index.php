@@ -2,12 +2,12 @@
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
- | phpFileManager 1.7.3
+ | phpFileManager 1.7.4
  | By Fabricio Seger Kolling
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-02-07
+ | Last Changed: 2019-02-09
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.3';
+$version = '1.7.4';
 $charset = 'UTF-8';
 $debug_mode = false;
 $quota_mb = 0;
@@ -108,7 +108,7 @@ if (@get_magic_quotes_gpc()) {
 $blockKeys = array('_SERVER','_SESSION','_GET','_POST','_COOKIE');
 foreach ($_GET as $key => $val) if (array_search($key,$blockKeys) === false) $$key=$val;
 foreach ($_POST as $key => $val) if (array_search($key,$blockKeys) === false) $$key=$val;
-foreach ($_COOKIE as $key => $val) if (array_search($key,$blockKeys) === false) $$key=$val;
+foreach ($_COOKIE as $key => $val) if (array_search($key,$blockKeys) === false && $key != 'fm_current_dir') $$key=$val;
 // PHP_VERSION_ID is available as of PHP 5.2.7, if our version is lower than that, then emulate it
 if (!defined('PHP_VERSION_ID')) {
     $php_version = explode('.', PHP_VERSION);
@@ -230,6 +230,7 @@ class config {
             'lang'=>'',
             'fm_root'=>'',
             'timezone'=>'',
+            'date_format'=>'Y/m/d H:i',
             'auth_pass'=>md5(''),
             'error_reporting'=>1
         );
@@ -336,6 +337,9 @@ if (!isset($fm_current_dir)){
         $fm_current_dir = $fm_current_root;
     }
     if ($is_windows) $fm_current_dir = ucfirst($fm_current_dir);
+    if (strlen($_COOKIE['fm_current_dir'])) {
+        $fm_current_dir = $_COOKIE['fm_current_dir'];
+    }
 }
 $fm_current_root = rtrim($fm_current_root,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 $fm_current_dir = rtrim($fm_current_dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
@@ -459,7 +463,7 @@ if ($auth_pass == md5('') || $loggedon==$auth_pass){
                 case 8: chmod_form(); break;
                 case 9: shell_form(); break;
                 case 10: upload_form(); break;
-                case 11: execute_file(); break;
+                case 11: system_exec_file(); break;
                 case 12: portscan_form(); break;
                 case 13: about_form(); break;
                 case 99: get_base64_file(); break;
@@ -570,17 +574,25 @@ function download(){
         } else alert(et('ReadDenied').": ".$file);
     } else alert(et('FileNotFound').": ".$file);
 }
-function execute_file(){
+function system_exec_file(){
     global $fm_current_dir,$filename,$debug_mode;
     if ($debug_mode) {
-        fb_log('execute_file',$filename);
+        fb_log('system_exec_file',$filename);
         return;
     }
     header("Content-type: text/plain");
     $file = $fm_current_dir.$filename;
     if(file_exists($file)){
-        echo "# ".$file."\n";
-        system_exec_cmd($file,$output);
+        $fm_current_dir = get_absolute_path($fm_current_dir);
+        $cmd_line = '';
+        if ($is_windows) {
+            $cmd_line .= "cd /D ".$fm_current_dir." && ";
+        } else {
+            $cmd_line .= "cd ".$fm_current_dir." && ";
+        }
+        $cmd_line .= $file;
+        echo "# ".$cmd_line."\n";
+        system_exec_cmd($cmd_line, $output);
         echo $output;
     } else echo(et('FileNotFound').": ".$file);
 }
@@ -605,52 +617,22 @@ function save_upload($temp_file,$filename,$dir_dest) {
             if (file_exists($file)){
                 if (unlink($file)){
                     if (copy($temp_file,$file)){
-                        @chmod($file,0755);
+                        // https://stackoverflow.com/questions/23851821/setting-file-permissions-in-windows-with-php
+                        if ($is_windows) system_exec_cmd('icacls "'.$file.'" /q /c /reset');
+                        else @chmod($file,0644);
                         $out = 6;
                     } else $out = 2;
                 } else $out = 5;
             } else {
                 if (copy($temp_file,$file)){
-                    @chmod($file,0755);
+                    if ($is_windows) system_exec_cmd('icacls "'.$file.'" /q /c /reset');
+                    else @chmod($file,0644);
                     $out = 1;
                 } else $out = 2;
             }
         } else $out = 3;
     } else $out = 4;
     return $out;
-}
-function zip_extract(){
-    global $cmd_arg,$fm_current_dir,$debug_mode;
-    if ($debug_mode) {
-        fb_log('zip_extract',$fm_current_dir.$cmd_arg);
-        return;
-    }
-    $zip = zip_open($fm_current_dir.$cmd_arg);
-    if ($zip) {
-        while ($zip_entry = zip_read($zip)) {
-            if (zip_entry_filesize($zip_entry)) {
-                $complete_path = $path.dirname(zip_entry_name($zip_entry));
-                $complete_name = $path.zip_entry_name($zip_entry);
-                if(!file_exists($complete_path)) {
-                    $tmp = '';
-                    foreach(explode(DIRECTORY_SEPARATOR,$complete_path) AS $k) {
-                        $tmp .= $k.DIRECTORY_SEPARATOR;
-                        if(!file_exists($tmp)) {
-                            @mkdir($fm_current_dir.$tmp, 0755);
-                        }
-                    }
-                }
-                if (zip_entry_open($zip, $zip_entry, "r")) {
-                    if ($fd = fopen($fm_current_dir.$complete_name, 'w')){
-                        fwrite($fd, zip_entry_read($zip_entry, zip_entry_filesize($zip_entry)));
-                        fclose($fd);
-                    } else echo "fopen($fm_current_dir.$complete_name) error<br>";
-                    zip_entry_close($zip_entry);
-                } else echo "zip_entry_open($zip,$zip_entry) error<br>";
-            }
-        }
-        zip_close($zip);
-    }
 }
 // +--------------------------------------------------
 // | Data Formating
@@ -1119,7 +1101,7 @@ function reloadframe($ref,$frame_number,$plus=""){
     echo "
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
-        ".$ref.".frame".$frame_number.".location.href='".$fm_path_info["basename"]."?frame=".$frame_number."&fm_current_dir=".rawurlencode($fm_current_dir).$plus."';
+        ".$ref.".frame".$frame_number.".location.href='".$fm_path_info["basename"]."?frame=".$frame_number."&fm_current_dir=".rawurlencode($fm_current_dir.$plus)."';
     //-->
     </script>
     ";
@@ -1485,8 +1467,29 @@ function getmicrotime(){
    list($usec, $sec) = explode(" ", microtime());
    return ((float)$usec + (float)$sec);
 }
+function dirsize($path){
+    global $is_windows;
+    $size = 0;
+    if (is_dir($path)){
+        if ($is_windows && class_exists('COM')) {
+            $obj = new COM('scripting.filesystemobject');
+            if (is_object($obj)) {
+                $ref = $obj->getfolder($path);
+                $size = $ref->size;
+                $obj = null;
+            }
+        } else {
+            $output = '';
+            if (system_exec_cmd('du -s -B1 '.$path,$output)){
+                $size = substr($output,0,strpos($output,"\t"));
+                $size = intval($size);
+            }
+        }
+    }
+    return $size;
+}
 function dir_list_form() {
-    global $fm_current_root,$fm_current_dir,$quota_mb,$resolve_ids,$order_dir_list_by,$is_windows,$cmd_name,$ip,$lan_ip,$fm_path_info,$version;
+    global $fm_current_root,$fm_current_dir,$quota_mb,$resolve_ids,$order_dir_list_by,$is_windows,$cmd_name,$ip,$lan_ip,$fm_path_info,$version,$date_format;
     $ti = getmicrotime();
     clearstatcache();
     $out = "<style>
@@ -1551,7 +1554,7 @@ function dir_list_form() {
             document.getElementById(\"modalDiv\").style.display=('none');
             document.getElementById(\"modalIframeWrapper\").style.display=('none');
             if (modalWindowReloadOnClose) {
-                window.top.frame3.location.href='".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."';
+                window.parent.frame3.location.href='".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."';
             }
         }
     -->
@@ -1567,11 +1570,39 @@ function dir_list_form() {
         $total_size = 0;
         $entry_list = array();
         while (($entry = readdir($opdir)) !== false) {
-          if (($entry != ".")&&($entry != "..")){
+            if ($entry == "." || $entry == "..") continue;
+            $entry_list[$entry_count]["name"] = $entry;
             $entry_list[$entry_count]["size"] = 0;
             $entry_list[$entry_count]["sizet"] = 0;
             $entry_list[$entry_count]["type"] = "none";
-            if (is_file($fm_current_dir.$entry)){
+            $entry_list[$entry_count]["date"] = date("Ymd", filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]["time"] = date("his", filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]["datet"] = date($date_format, filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]["p"] = substr(sprintf('%o', fileperms($fm_current_dir.$entry)), -4);
+            $entry_list[$entry_count]["u"] = fileowner($fm_current_dir.$entry);
+            $entry_list[$entry_count]["g"] = filegroup($fm_current_dir.$entry);
+            if ($resolve_ids){
+                $entry_list[$entry_count]["p"] = show_perms(fileperms($fm_current_dir.$entry));
+                if (!$is_windows){
+                    $entry_list[$entry_count]["u"] = get_user(fileowner($fm_current_dir.$entry));
+                    $entry_list[$entry_count]["g"] = get_group(filegroup($fm_current_dir.$entry));
+                }
+            }
+            if (is_link($fm_current_dir.$entry)){
+                $entry_list[$entry_count]["link_target"] = readlink($fm_current_dir.$entry);
+                $ext = lowercase(strrchr($entry,"."));
+                $entry_list[$entry_count]["type"] = "link";
+                $entry_list[$entry_count]["size"] = filesize($fm_current_dir.$entry);
+                $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
+                if (strstr($ext,".")){
+                    $entry_list[$entry_count]["ext"] = $ext;
+                    $entry_list[$entry_count]["extt"] = $ext;
+                } else {
+                    $entry_list[$entry_count]["ext"] = "";
+                    $entry_list[$entry_count]["extt"] = "&nbsp;";
+                }
+                $has_files = true;
+            } elseif (is_file($fm_current_dir.$entry)){
                 $ext = lowercase(strrchr($entry,"."));
                 $entry_list[$entry_count]["type"] = "file";
                 // Função filetype() returns only "file"...
@@ -1586,28 +1617,14 @@ function dir_list_form() {
                 }
                 $has_files = true;
             } elseif (is_dir($fm_current_dir.$entry)) {
-                // Recursive directory size disabled
-                // $entry_list[$entry_count]["size"] = total_size($fm_current_dir.$entry);
-                $entry_list[$entry_count]["size"] = 0;
                 $entry_list[$entry_count]["sizet"] = "&nbsp;";
+                // $entry_list[$entry_count]["size"] = total_size($fm_current_dir.$entry);
+                $entry_list[$entry_count]["size"] = dirsize($fm_current_dir.$entry);
+                if ($entry_list[$entry_count]["size"]) $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
                 $entry_list[$entry_count]["type"] = "dir";
-            }
-            $entry_list[$entry_count]["name"] = $entry;
-            $entry_list[$entry_count]["date"] = date("Ymd", filemtime($fm_current_dir.$entry));
-            $entry_list[$entry_count]["time"] = date("his", filemtime($fm_current_dir.$entry));
-            $entry_list[$entry_count]["datet"] = date("d/m/y h:i", filemtime($fm_current_dir.$entry));
-            if (!$is_windows && $resolve_ids){
-                $entry_list[$entry_count]["p"] = show_perms(fileperms($fm_current_dir.$entry));
-                $entry_list[$entry_count]["u"] = get_user(fileowner($fm_current_dir.$entry));
-                $entry_list[$entry_count]["g"] = get_group(filegroup($fm_current_dir.$entry));
-            } else {
-                $entry_list[$entry_count]["p"] = substr(sprintf('%o', fileperms($fm_current_dir.$entry)), -4);
-                $entry_list[$entry_count]["u"] = fileowner($fm_current_dir.$entry);
-                $entry_list[$entry_count]["g"] = filegroup($fm_current_dir.$entry);
             }
             $total_size += $entry_list[$entry_count]["size"];
             $entry_count++;
-          }
         }
         @closedir($opdir);
     }
@@ -1647,15 +1664,16 @@ function dir_list_form() {
     }
     var entry_list = new Array();
     // Custom object constructor
-    function entry(name, type, size, selected){
+    function entry(name, type, perms, size, selected){
         this.name = name;
         this.type = type;
+        this.perms = perms;
         this.size = size;
         this.selected = false;
     }
     // Declare entry_list for selection procedures";
     foreach ($entry_list as $i=>$data){
-        $out .= "\nentry_list['entry$i'] = new entry('".addslashes($data["name"])."', '".$data["type"]."', ".$data["size"].", false);";
+        $out .= "\n\tentry_list['entry$i'] = new entry('".addslashes($data["name"])."', '".$data["type"]."', '".$data["p"]."', ".$data["size"].", false);";
     }
     $out .= "
     // Select/Unselect Rows OnClick/OnMouseOver
@@ -1763,6 +1781,7 @@ function dir_list_form() {
         sel_totalsize += Entry.size;
         if(Entry.type == 'dir') total_dirs_selected++;
         else total_files_selected++;
+        document.form_action.chmod_arg.value = Entry.perms;
         return true;
     }
     function is_anything_selected(){
@@ -1778,7 +1797,7 @@ function dir_list_form() {
         document.form_action.selected_file_list.value = selected_file_list.join('<|*|>');
         return (total_dirs_selected>0 || total_files_selected>0);
     }
-    function format_size (arg) {
+    function format_size(arg) {
         var resul = '';
         if (arg>0){
             var j = 0;
@@ -1790,8 +1809,20 @@ function dir_list_form() {
     }
     var sel_totalsize = 0;
     function update_sel_status(){
-        var t = total_dirs_selected+' ".et('Dir_s')." ".et('And')." '+total_files_selected+' ".et('File_s')." ".et('Selected_s')." = '+format_size(sel_totalsize);
-        //document.getElementById(\"sel_status\").innerHTML = t;
+        var t = '';
+        if (total_dirs_selected) t += total_dirs_selected+' ".et('Dir_s')."';
+        if (total_files_selected) {
+            if (total_dirs_selected) t += ' ".et('And')." ';
+            t += total_files_selected+' ".et('File_s')."';
+        }
+        if (t != '') {
+            t += ' ".et('Selected_s')."';
+            if (sel_totalsize) t += ' = '+format_size(sel_totalsize);
+        }
+        var el = document.getElementById('sel_status');
+        if (el) {
+            el.innerHTML = '<span>'+t+'</span><br />';
+        }
         window.status = t;
     }
     // Select all/none/inverse
@@ -1833,50 +1864,51 @@ function dir_list_form() {
         update_sel_status();
         return true;
     }
-    function download(arg){
-        parent.frame1.location.href='".addslashes($fm_path_info["basename"])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
-    }
     function upload_form(){
         openModalWindow('".addslashes($fm_path_info["basename"])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',800,350,true);
     }
-    function decompress(arg){
-        if(confirm('".uppercase(et('Decompress'))." \\' '+arg+' \\' ?')) {
+    function edit_file_form(arg){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." '+(arg),1000,750);
+    }
+    function config_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."',700,450);
+    }
+    function server_info_form(arg){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."',1000,750);
+    }
+    function shell_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',1000,750);
+    }
+    function portscan_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."',1000,750);
+    }
+    function about_form(){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=13','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."',1000,750);
+    }
+    function view_form(arg){
+        openModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg),1000,750);
+    }
+    function download_entry(arg){
+        parent.frame1.location.href='".addslashes($fm_path_info["basename"])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
+    }
+    function decompress_entry(arg){
+        if(confirm('".uppercase(et('Decompress'))." \\''+arg+'\\' ?')) {
             document.form_action.action.value = 72;
             document.form_action.cmd_arg.value = arg;
             document.form_action.submit();
         }
     }
-    function execute_file(arg){
-        if(arg.length>0){
-            if(confirm('".et('ConfExec')." \\' '+arg+' \\' ?')) {
-                openModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg),1024,768);
-            }
+    function execute_entry(arg){
+        if(confirm('".et('ConfExec')." \\''+arg+'\\' ?')) {
+            openModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg),1000,750);
         }
     }
-    function edit_file_form(arg){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." '+(arg),1024,768);
+    function delete_entry(arg){
+        if(confirm('".uppercase(et('Rem'))." \\''+arg+'\\' ?')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=8&cmd_arg='+encodeURIComponent(arg)+'&fm_current_dir=".rawurlencode($fm_current_dir)."';
     }
-    function config_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."',800,400);
-    }
-    function server_info_form(arg){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."',1024,768);
-    }
-    function shell_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',1024,768);
-    }
-    function portscan_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."',1024,768);
-    }
-    function about_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=13','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."',1024,768);
-    }
-    function view_form(arg){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg),1024,768);
-    }
-    function rename(arg){
+    function rename_entry(arg){
         var nome = '';
-        if (nome = prompt('".uppercase(et('Ren'))." \\' '+arg+' \\' ".et('To')." ...')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
+        if (nome = prompt('".uppercase(et('Ren'))." \\''+arg+'\\' ".et('To')." ...')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
     }
     function set_dir_dest(arg){
         document.form_action.dir_dest.value=arg;
@@ -1908,10 +1940,12 @@ function dir_list_form() {
     }
     function chmod_form(){
         cancel_copy_move();
-        document.form_action.dir_dest.value='';
-        document.form_action.chmod_arg.value='';
         if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
-        else openModalWindow('".addslashes($fm_path_info["basename"])."?action=8','".et('Perms')."',280,180);
+        else {
+            openModalWindow('".addslashes($fm_path_info["basename"])."?action=8&chmod_arg='+encodeURIComponent(document.form_action.chmod_arg.value),'".et('Perms')."',500,340);
+            document.form_action.dir_dest.value='';
+            document.form_action.chmod_arg.value='';
+        }
     }
     function set_chmod_arg(arg){
         cancel_copy_move();
@@ -2047,16 +2081,13 @@ function dir_list_form() {
                 <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
                 <button type=\"button\" class=\"btn\" onclick=\"selectANI(this)\" id=\"ANI0\" value=\"".et('SelAll')."\"><i class=\"fa fa-copy-o\"></i> " . et('SelAll') . "</button>
                 <button type=\"button\" class=\"btn\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\"><i class=\"fa fa-file-light\"></i> " . et('SelInverse') . "</button>
-                <button type=\"button\" class=\"btn\" onclick=\"test(4)\"> <i class=\"fa fa-file-remove\"></i> " . et('Rem') . "</button>
-                <button type=\"button\" class=\"btn\" onclick=\"sel_dir(5)\"> <i class=\"fa fa-copy\"></i> " . et('Copy') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"test(4)\"><i class=\"fa fa-file-remove\"></i> " . et('Rem') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"sel_dir(5)\"><i class=\"fa fa-copy\"></i> " . et('Copy') . "</button>
                 <button type=\"button\" class=\"btn\" onclick=\"sel_dir(6)\"><i class=\"fa fa-file-go\"></i> " . et('Move') . "</button>
                 <button type=\"button\" class=\"btn\" onclick=\"test_prompt(71)\"><i class=\"fa fa-file-archive-o\"></i> " . et('Compress') . "</button>
-                <button type=\"button\" class=\"btn\" onclick=\"test(73)\"><i class=\"fa fa-download\"></i> ZIP " . et('Download') . "</button>";
-            if (!$is_windows) $out .= "
-                <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>";
-            $out .= "
-                <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>";
-            $out .= "
+                <button type=\"button\" class=\"btn\" onclick=\"test(73)\"><i class=\"fa fa-download\"></i> ZIP " . et('Download') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>
                 </nobr></td>
                 </tr>
                 <tr>
@@ -2083,10 +2114,10 @@ function dir_list_form() {
                     if ($has_files) $dir_out[$dir_count][] = "<td>Folder</td>";
                     // Directory Actions
                     if ( is_writable($fm_current_dir.$file) ) $dir_out[$dir_count][] = "
-                        <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:if(confirm('".et('ConfRem')." \\'".addslashes($file)."\\' ?')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=8&cmd_arg=".addslashes($file)."&fm_current_dir=".rawurlencode($fm_current_dir)."'\">".et('Rem')."</a>";
+                        <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:delete_entry('".addslashes($file)."')\">".et('Rem')."</a>";
                     if ( is_writable($fm_current_dir.$file) ) $dir_out[$dir_count][] = "
-                        <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:rename('".addslashes($file)."')\">".et('Ren')."</a>";
-                    if (count($dir_out[$dir_count])>$max_opt){
+                        <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:rename_entry('".addslashes($file)."')\">".et('Ren')."</a>";
+                    if ( count($dir_out[$dir_count]) > $max_opt ){
                         $max_opt = count($dir_out[$dir_count]);
                     }
                     $dir_count++;
@@ -2095,7 +2126,7 @@ function dir_list_form() {
                     $file_out[$file_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
                         <td><nobr><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span>
-                        <a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:download('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
+                        <a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:download_entry('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
                     $file_out[$file_count][] = "<td>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $file_out[$file_count][] = "<td><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -2106,22 +2137,22 @@ function dir_list_form() {
                     $file_out[$file_count][] = "<td>".$dir_entry["extt"]."</td>";
                     // File Actions
                     if ( is_writable($fm_current_dir.$file) ) $file_out[$file_count][] = "
-                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:if(confirm('".uppercase(et('Rem'))." \\'".addslashes($file)."\\' ?')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=8&cmd_arg=".addslashes($file)."&fm_current_dir=".rawurlencode($fm_current_dir)."'\">".et('Rem')."</a>";
+                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:delete_entry('".addslashes($file)."')\">".et('Rem')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
                     if ( is_writable($fm_current_dir.$file) ) $file_out[$file_count][] = "
-                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:rename('".addslashes($file)."')\">".et('Ren')."</a>";
+                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:rename_entry('".addslashes($file)."')\">".et('Ren')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
                     if ( is_readable($fm_current_dir.$file) && (strlen($dir_entry["ext"]) == 0 || strpos(".wav#.mp3#.mid#.avi#.mov#.mpeg#.mpg#.rm#.iso#.bin#.img#.dll#.psd#.fla#.swf#.class#.ppt#.tif#.tiff#.pcx#.jpg#.gif#.png#.wmf#.eps#.bmp#.msi#.exe#.com#.rar#.tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry["ext"]."#" ) === false)) $file_out[$file_count][] = "
                                 <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:edit_file_form('".addslashes($file)."')\">".et('Edit')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
-                    if ( is_readable($fm_current_dir.$file) && (strpos(".txt#.sys#.bat#.ini#.conf#.swf#.html#.htm#.jpg#.gif#.png#.bmp#.php#.php3#.asp#", $dir_entry["ext"]."#" ) !== false)) $file_out[$file_count][] = "
+                    if ( is_readable($fm_current_dir.$file) && (strpos(".txt#.sys#.bat#.ini#.conf#.swf#.html#.htm#.jpg#.gif#.png#.bmp#.php#.php3#.asp#", $dir_entry["ext"]."#" ) !== false) ) $file_out[$file_count][] = "
                                 <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:view_form('".addslashes($file)."');\">".et('View')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
-                    if ( is_readable($fm_current_dir.$file) && strlen($dir_entry["ext"]) && (strpos(".tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry["ext"]."#" ) !== false)) $file_out[$file_count][] = "
-                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:decompress('".addslashes($file)."')\">".et('Decompress')."</a>";
+                    if ( is_readable($fm_current_dir.$file) && strlen($dir_entry["ext"]) && (strpos(".tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry["ext"]."#" ) !== false) ) $file_out[$file_count][] = "
+                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:decompress_entry('".addslashes($file)."')\">".et('Decompress')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
-                    if ( is_readable($fm_current_dir.$file) && strlen($dir_entry["ext"]) && (strpos(".exe#.com#.sh#.bat#", $dir_entry["ext"]."#" ) !== false)) $file_out[$file_count][] = "
-                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:execute_file('".addslashes($file)."')\">".et('Exec')."</a>";
+                    if ( is_executable($fm_current_dir.$file) || (strlen($dir_entry["ext"]) && (strpos(".exe#.com#.bat#.sh#.py#.pl", $dir_entry["ext"]."#" ) !== false)) ) $file_out[$file_count][] = "
+                                <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:execute_entry('".addslashes($file)."')\">".et('Exec')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
                     if (count($file_out[$file_count])>$max_opt){
                         $max_opt = count($file_out[$file_count]);
@@ -2163,16 +2194,13 @@ function dir_list_form() {
                 <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
                     <button type=\"button\" class=\"btn\" onclick=\"selectANI(this)\" id=\"ANI1\" value=\"".et('SelAll')."\"><i class=\"fa fa-copy-o\"></i> " . et('SelAll') . "</button>
                     <button type=\"button\" class=\"btn\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\"><i class=\"fa fa-file-light\"></i> " . et('SelInverse') . "</button>
-                    <button type=\"button\" class=\"btn\" onclick=\"test(4)\"> <i class=\"fa fa-file-remove\"></i> " . et('Rem') . "</button>
-                    <button type=\"button\" class=\"btn\" onclick=\"sel_dir(5)\"> <i class=\"fa fa-copy\"></i> " . et('Copy') . "</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"test(4)\"><i class=\"fa fa-file-remove\"></i> " . et('Rem') . "</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"sel_dir(5)\"><i class=\"fa fa-copy\"></i> " . et('Copy') . "</button>
                     <button type=\"button\" class=\"btn\" onclick=\"sel_dir(6)\"><i class=\"fa fa-file-go\"></i> " . et('Move') . "</button>
                     <button type=\"button\" class=\"btn\" onclick=\"test_prompt(71)\"><i class=\"fa fa-file-archive-o\"></i> " . et('Compress') . "</button>
-                    <button type=\"button\" class=\"btn\" onclick=\"test(73)\"><i class=\"fa fa-download\"></i> ZIP " . et('Download') . "</button>";
-            if (!$is_windows) $out .= "
-                    <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>";
-            $out .= "
-                    <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>";
-            $out .= "
+                    <button type=\"button\" class=\"btn\" onclick=\"test(73)\"><i class=\"fa fa-download\"></i> ZIP " . et('Download') . "</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>
                 </nobr></td>
                 </tr>";
             $out .= "
@@ -2195,25 +2223,26 @@ function dir_list_form() {
         <tr style=\"border-top: 2px solid #eaeaea;\">
         <td bgcolor=\"#DDDDDD\" colspan=50 class=\"fm-disk-info\">
             <div style=\"float:left;\">
-                <span>".$file_count." ".et('File_s')." = ".format_size($total_size)."</span>";
+                <span>".$file_count." ".et('File_s')." = ".format_size($total_size)."</span><br />
+                <div id=\"sel_status\"></div>";
                 if ($quota_mb) {
                     $out .= "
-                    <br /><span>".et('Partition')." = ".format_size(($quota_mb*1024*1024))." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span>";
+                    <span>".et('Partition')." = ".format_size(($quota_mb*1024*1024))." - ".format_size(($quota_mb*1024*1024)-total_size($fm_current_root))." ".et('Free')."</span>";
                 } else {
                     $out .= "
-                    <br /><span>".et('Partition')." = ".format_size(disk_total_space($fm_current_dir))." / ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span>";
+                    <span>".et('Partition')." = ".format_size(disk_total_space($fm_current_dir))." / ".format_size(disk_free_space($fm_current_dir))." ".et('Free')."</span>";
                 }
+                /*
                 $tf = getmicrotime();
                 $tt = ($tf - $ti);
-                /*
                 $out .= "
                     <br /><span>".et('RenderTime').": ".substr($tt,0,strrpos($tt,".")+5)." ".et('Seconds')."</span>";
                 */
                 $out .= "
             </div>
             <div style=\"float:right\">
-                <span>".date_default_timezone_get()."</span>
-                <br /><span>".date('Y-m-d H:i')."</span>
+                <span>".date_default_timezone_get()."</span><br />
+                <span>".date($date_format)."</span>
             </div>
         </td></tr>
     </table>";
@@ -2317,145 +2346,129 @@ function upload_form(){
     echo "</body>\n</html>";
 }
 function chmod_form(){
+    global $chmod_arg;
+    if (!intval($chmod_arg)) $chmod_arg = '0755';
     html_header("
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
-    function octalchange() {
-        var val = document.chmod_form.t_total.value;
-        var stickybin = parseInt(val.charAt(0)).toString(2);
-        var ownerbin = parseInt(val.charAt(1)).toString(2);
-        while (ownerbin.length<3) { ownerbin=\"0\"+ownerbin; };
-        var groupbin = parseInt(val.charAt(2)).toString(2);
-        while (groupbin.length<3) { groupbin=\"0\"+groupbin; };
-        var otherbin = parseInt(val.charAt(3)).toString(2);
-        while (otherbin.length<3) { otherbin=\"0\"+otherbin; };
-        document.chmod_form.sticky.checked = parseInt(stickybin.charAt(0));
-        document.chmod_form.owner4.checked = parseInt(ownerbin.charAt(0));
-        document.chmod_form.owner2.checked = parseInt(ownerbin.charAt(1));
-        document.chmod_form.owner1.checked = parseInt(ownerbin.charAt(2));
-        document.chmod_form.group4.checked = parseInt(groupbin.charAt(0));
-        document.chmod_form.group2.checked = parseInt(groupbin.charAt(1));
-        document.chmod_form.group1.checked = parseInt(groupbin.charAt(2));
-        document.chmod_form.other4.checked = parseInt(otherbin.charAt(0));
-        document.chmod_form.other2.checked = parseInt(otherbin.charAt(1));
-        document.chmod_form.other1.checked = parseInt(otherbin.charAt(2));
-        calc_chmod(1);
-    };
-    function calc_chmod(nototals) {
-      var users = new Array(\"owner\", \"group\", \"other\");
-      var totals = new Array(\"\",\"\",\"\");
-      var syms = new Array(\"\",\"\",\"\");
-
-        for (var i=0; i<users.length; i++)
-        {
-            var user=users[i];
-            var field4 = user + \"4\";
-            var field2 = user + \"2\";
-            var field1 = user + \"1\";
-            var symbolic = \"sym_\" + user;
-            var number = 0;
-            var sym_string = \"\";
-            var sticky = \"0\";
-            var sticky_sym = \" \";
-            if (document.chmod_form.sticky.checked){
-                sticky = \"1\";
-                sticky_sym = \"t\";
+        function octalchange() {
+            var val = document.chmod_form.t_total.value;
+            var stickybin = parseInt(val.charAt(0)).toString(2);
+            var ownerbin = parseInt(val.charAt(1)).toString(2);
+            while (ownerbin.length<3) { ownerbin=\"0\"+ownerbin; };
+            var groupbin = parseInt(val.charAt(2)).toString(2);
+            while (groupbin.length<3) { groupbin=\"0\"+groupbin; };
+            var otherbin = parseInt(val.charAt(3)).toString(2);
+            while (otherbin.length<3) { otherbin=\"0\"+otherbin; };
+            document.chmod_form.sticky.checked = parseInt(stickybin.charAt(0));
+            document.chmod_form.owner4.checked = parseInt(ownerbin.charAt(0));
+            document.chmod_form.owner2.checked = parseInt(ownerbin.charAt(1));
+            document.chmod_form.owner1.checked = parseInt(ownerbin.charAt(2));
+            document.chmod_form.group4.checked = parseInt(groupbin.charAt(0));
+            document.chmod_form.group2.checked = parseInt(groupbin.charAt(1));
+            document.chmod_form.group1.checked = parseInt(groupbin.charAt(2));
+            document.chmod_form.other4.checked = parseInt(otherbin.charAt(0));
+            document.chmod_form.other2.checked = parseInt(otherbin.charAt(1));
+            document.chmod_form.other1.checked = parseInt(otherbin.charAt(2));
+            calc_chmod(1);
+        };
+        function calc_chmod(nototals) {
+            var users = new Array(\"owner\", \"group\", \"other\");
+            var totals = new Array(\"\",\"\",\"\");
+            var syms = new Array(\"\",\"\",\"\");
+            for (var i=0; i<users.length; i++) {
+                var user=users[i];
+                var field4 = user + \"4\";
+                var field2 = user + \"2\";
+                var field1 = user + \"1\";
+                var symbolic = \"sym_\" + user;
+                var number = 0;
+                var sym_string = \"\";
+                var sticky = \"0\";
+                var sticky_sym = \" \";
+                if (document.chmod_form.sticky.checked){
+                    sticky = \"1\";
+                    sticky_sym = \"t\";
+                }
+                if (document.chmod_form[field4].checked == true) { number += 4; }
+                if (document.chmod_form[field2].checked == true) { number += 2; }
+                if (document.chmod_form[field1].checked == true) { number += 1; }
+                if (document.chmod_form[field4].checked == true) {
+                    sym_string += \"r\";
+                } else {
+                    sym_string += \"-\";
+                }
+                if (document.chmod_form[field2].checked == true) {
+                    sym_string += \"w\";
+                } else {
+                    sym_string += \"-\";
+                }
+                if (document.chmod_form[field1].checked == true) {
+                    sym_string += \"x\";
+                } else {
+                    sym_string += \"-\";
+                }
+                totals[i] = totals[i]+number;
+                syms[i] =  syms[i]+sym_string;
             }
-            if (document.chmod_form[field4].checked == true) { number += 4; }
-            if (document.chmod_form[field2].checked == true) { number += 2; }
-            if (document.chmod_form[field1].checked == true) { number += 1; }
-
-            if (document.chmod_form[field4].checked == true) {
-                sym_string += \"r\";
-            } else {
-                sym_string += \"-\";
-            }
-            if (document.chmod_form[field2].checked == true) {
-                sym_string += \"w\";
-            } else {
-                sym_string += \"-\";
-            }
-            if (document.chmod_form[field1].checked == true) {
-                sym_string += \"x\";
-            } else {
-                sym_string += \"-\";
-            }
-
-            totals[i] = totals[i]+number;
-            syms[i] =  syms[i]+sym_string;
-
-      };
-        if (!nototals) document.chmod_form.t_total.value = sticky + totals[0] + totals[1] + totals[2];
-        document.chmod_form.sym_total.value = syms[0] + syms[1] + syms[2] + sticky_sym;
-    }
-    function sticky_change() {
-        document.chmod_form.sticky.checked = !(document.chmod_form.sticky.checked);
-    }
-    function apply_chmod() {
-        if (confirm('".et('AlterPermTo')." \\' '+document.chmod_form.t_total.value+' \\' ?\\n')){
-            window.top.frame3.set_chmod_arg(document.chmod_form.t_total.value);
-            window.top.frame3.closeModalWindow();
+            if (!nototals) document.chmod_form.t_total.value = sticky + totals[0] + totals[1] + totals[2];
+            document.chmod_form.sym_total.value = syms[0] + syms[1] + syms[2] + sticky_sym;
         }
-    }
-    window.onload=octalchange
+        function sticky_change() {
+            document.chmod_form.sticky.checked = !(document.chmod_form.sticky.checked);
+        }
+        function apply_chmod() {
+            if (confirm('".et('AlterPermTo')." \\' '+document.chmod_form.t_total.value+' \\' ?\\n')){
+                window.parent.parent.frame3.set_chmod_arg(document.chmod_form.t_total.value);
+                window.parent.parent.frame3.closeModalWindow();
+            }
+        }
+        window.onload=octalchange
     //-->
     </script>");
-    echo "<body marginwidth=\"0\" marginheight=\"0\">
-    <form name=\"chmod_form\">
-    <table border=\"0\" cellspacing=\"0\" cellpadding=\"4\" align=center style=\"padding:5px;\">
-    <tr align=\"left\" valign=\"middle\">
-    <td><input type=\"text\" name=\"t_total\" value=\"0755\" size=\"4\" onKeyUp=\"octalchange()\"> </td>
-    <td><input type=\"text\" name=\"sym_total\" value=\"\" size=\"12\" readonly=\"1\"></td>
-    </tr>
-    </table>
-    <table cellpadding=\"2\" cellspacing=\"0\" border=\"0\" align=center>
-    <tr bgcolor=\"#333333\">
-    <td width=\"60\" align=\"left\"> </td>
-    <td width=\"55\" align=\"center\" style=\"color:#FFFFFF\"><b>".et('Owner')."
-    </b></td>
-    <td width=\"55\" align=\"center\" style=\"color:#FFFFFF\"><b>".et('Group')."
-    </b></td>
-    <td width=\"55\" align=\"center\" style=\"color:#FFFFFF\"><b>".et('Other')."
-    <b></td>
-    </tr>
-    <tr bgcolor=\"#DDDDDD\">
-    <td width=\"60\" align=\"left\" nowrap bgcolor=\"#FFFFFF\">".et('Read')."</td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\">
-    <input type=\"checkbox\" name=\"owner4\" value=\"4\" onclick=\"calc_chmod()\">
-    </td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#FFFFFF\"><input type=\"checkbox\" name=\"group4\" value=\"4\" onclick=\"calc_chmod()\">
-    </td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\">
-    <input type=\"checkbox\" name=\"other4\" value=\"4\" onclick=\"calc_chmod()\">
-    </td>
-    </tr>
-    <tr bgcolor=\"#DDDDDD\">
-    <td width=\"60\" align=\"left\" nowrap bgcolor=\"#FFFFFF\">".et('Write')."</td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\">
-    <input type=\"checkbox\" name=\"owner2\" value=\"2\" onclick=\"calc_chmod()\"></td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#FFFFFF\"><input type=\"checkbox\" name=\"group2\" value=\"2\" onclick=\"calc_chmod()\">
-    </td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\">
-    <input type=\"checkbox\" name=\"other2\" value=\"2\" onclick=\"calc_chmod()\">
-    </td>
-    </tr>
-    <tr bgcolor=\"#DDDDDD\">
-    <td width=\"60\" align=\"left\" nowrap bgcolor=\"#FFFFFF\">".et('Exec')."</td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\">
-    <input type=\"checkbox\" name=\"owner1\" value=\"1\" onclick=\"calc_chmod()\">
-    </td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#FFFFFF\"><input type=\"checkbox\" name=\"group1\" value=\"1\" onclick=\"calc_chmod()\">
-    </td>
-    <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\">
-    <input type=\"checkbox\" name=\"other1\" value=\"1\" onclick=\"calc_chmod()\">
-    </td>
-    </tr>
-    </table>
-    <table border=\"0\" cellspacing=\"0\" cellpadding=\"4\" align=center>
-    <tr><td colspan=2><input type=checkbox name=sticky value=\"1\" onclick=\"calc_chmod()\"> <a href=\"JavaScript:sticky_change();\">".et('StickyBit')."</a><td colspan=2 align=right><input type=button value=\"".et('Apply')."\" onClick=\"apply_chmod()\"></tr>
-    </table>
-    </form>
-    </body>\n</html>";
+    echo "
+    <body marginwidth=\"0\" marginheight=\"0\" style=\"overflow: hidden;\">
+        <div style=\"-ms-transform:scale(1.5); transform: scale(1.5) translate(0, 50px);\">
+            <form name=\"chmod_form\">
+                <table border=\"0\" cellspacing=\"0\" cellpadding=\"4\" align=center style=\"padding:5px;\">
+                    <tr align=\"left\" valign=\"middle\">
+                        <td><input type=\"text\" name=\"t_total\" value=\"".html_encode($chmod_arg)."\" size=\"4\" onKeyUp=\"octalchange()\"> </td>
+                        <td><input type=\"text\" name=\"sym_total\" value=\"\" size=\"12\" readonly=\"1\"></td>
+                    </tr>
+                </table>
+                <table cellpadding=\"2\" cellspacing=\"0\" border=\"0\" align=center>
+                    <tr bgcolor=\"#333333\">
+                        <td width=\"60\" align=\"left\"> </td>
+                        <td width=\"55\" align=\"center\" style=\"color:#FFFFFF\"><b>".et('Owner')."</b></td>
+                        <td width=\"55\" align=\"center\" style=\"color:#FFFFFF\"><b>".et('Group')."</b></td>
+                        <td width=\"55\" align=\"center\" style=\"color:#FFFFFF\"><b>".et('Other')."<b></td>
+                    </tr>
+                    <tr bgcolor=\"#DDDDDD\">
+                        <td width=\"60\" align=\"left\" nowrap bgcolor=\"#FFFFFF\">".et('Read')."</td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\"><input type=\"checkbox\" name=\"owner4\" value=\"4\" onclick=\"calc_chmod()\"></td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#FFFFFF\"><input type=\"checkbox\" name=\"group4\" value=\"4\" onclick=\"calc_chmod()\"></td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\"><input type=\"checkbox\" name=\"other4\" value=\"4\" onclick=\"calc_chmod()\"></td>
+                    </tr>
+                    <tr bgcolor=\"#DDDDDD\">
+                        <td width=\"60\" align=\"left\" nowrap bgcolor=\"#FFFFFF\">".et('Write')."</td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\"><input type=\"checkbox\" name=\"owner2\" value=\"2\" onclick=\"calc_chmod()\"></td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#FFFFFF\"><input type=\"checkbox\" name=\"group2\" value=\"2\" onclick=\"calc_chmod()\"></td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\"><input type=\"checkbox\" name=\"other2\" value=\"2\" onclick=\"calc_chmod()\"></td>
+                    </tr>
+                    <tr bgcolor=\"#DDDDDD\">
+                        <td width=\"60\" align=\"left\" nowrap bgcolor=\"#FFFFFF\">".et('Exec')."</td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\"><input type=\"checkbox\" name=\"owner1\" value=\"1\" onclick=\"calc_chmod()\"></td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#FFFFFF\"><input type=\"checkbox\" name=\"group1\" value=\"1\" onclick=\"calc_chmod()\"></td>
+                        <td width=\"55\" align=\"center\" bgcolor=\"#EEEEEE\"><input type=\"checkbox\" name=\"other1\" value=\"1\" onclick=\"calc_chmod()\"></td>
+                    </tr>
+                </table>
+                <table border=\"0\" cellspacing=\"0\" cellpadding=\"4\" align=center>
+                    <tr><td colspan=2><input type=checkbox name=sticky value=\"1\" onclick=\"calc_chmod()\"> <a href=\"JavaScript:sticky_change();\">".et('StickyBit')."</a><td colspan=2 align=right><input type=button value=\"".et('Apply')."\" onClick=\"apply_chmod()\"></tr>
+                </table>
+            </form>
+        </div>
+    </body>
+    </html>";
 }
 function get_mime_type($ext = ''){
     $mimes = array(
@@ -2783,7 +2796,7 @@ function edit_file_form(){
     $fh=fopen($file,"r");
     $file_data=fread($fh, filesize($file));
     fclose($fh);
-//        <link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=prism.css\" media=\"screen\" />
+    //<link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=prism.css\" media=\"screen\" />
     html_header("
         <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery-1.11.1.min.js\"></script>
         <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=ace.js\"></script>
@@ -2797,7 +2810,7 @@ function edit_file_form(){
     <input type=hidden name=filename value=\"$filename\">
     <tr><th colspan=3>".$file."</th></tr>
     <tr><td colspan=3>
-        <div id=\"file_data_ace\" style=\"border: 1px solid #aaa; width:980px; height:680px;\">".html_encode($file_data)."</div>
+        <div id=\"file_data_ace\" style=\"border: 1px solid #aaa; width:960px; height:660px;\">".html_encode($file_data)."</div>
         <input type=\"hidden\" id=\"file_data\" name=\"file_data\">
     </td></tr>
     <tr>
@@ -2844,8 +2857,8 @@ function edit_file_form(){
 function config_form(){
     global $cfg;
     global $fm_current_dir,$fm_file,$doc_root,$fm_path_info,$fm_current_root,$sys_lang,$open_basedirs,$version;
-    global $lang,$fm_root,$timezone,$error_reporting;
-    global $config_action,$newlang,$newfmroot,$newtimezone,$newerror,$newpassvar;
+    global $lang,$fm_root,$timezone,$date_format,$error_reporting;
+    global $config_action,$newlang,$newfmroot,$newtimezone,$newdateformat,$newerror,$newpass;
     $reload = false;
     switch ($config_action){
         case 1:
@@ -2861,12 +2874,16 @@ function config_form(){
                 $cfg->data['timezone'] = $newtimezone;
                 $timezone = $newtimezone;
             }
+            if ($cfg->data['date_format'] != $newdateformat){
+                $cfg->data['date_format'] = $newdateformat;
+                $date_format = $newdateformat;
+            }
             if ($cfg->data['error_reporting'] != $newerror){
                 $cfg->data['error_reporting'] = $newerror;
                 $error_reporting = $newerror;
             }
-            if (isset($GLOBALS[$newpassvar])){
-                $cfg->data['auth_pass'] = md5($GLOBALS[$newpassvar]);
+            if ($cfg->data['auth_pass'] != $newpass){
+                $cfg->data['auth_pass'] = md5($newpass);
                 setcookie("loggedon", $cfg->data['auth_pass'], 0 , "/");
             }
             $cfg->save();
@@ -2880,12 +2897,11 @@ function config_form(){
         <script language=\"Javascript\" type=\"text/javascript\">
         <!--
             window.setTimeout(function(){
-                window.top.document.location.href='".$fm_path_info["basename"]."';
+                window.parent.parent.document.location.href='".$fm_path_info["basename"]."?fm_current_dir=".rawurlencode($fm_current_dir)."';
             },500);
         //-->
         </script>";
     } else {
-        $newpassvar = "newpass".time();
         $timezone_opts = array();
         $timezone_opts[] = 'Etc/UTC';
         $timezone_opts[] = 'Etc/GMT-14';
@@ -2916,9 +2932,8 @@ function config_form(){
         $timezone_opts[] = 'Etc/GMT+11';
         $timezone_opts[] = 'Etc/GMT+12';
         echo "
-        <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" autocomplete=\"off\">
-        <input type=hidden name=\"newpassvar\" value=\"".$newpassvar."\">
         <table border=0 cellspacing=0 cellpadding=5 align=left style=\"padding:5px;\">
+        <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" autocomplete=\"off\">
         <input type=hidden name=action value=2>
         <input type=hidden name=config_action value=0>
         <tr><td align=right width=1>".et('FileMan').":<td>".et('Version')." ".$version." (".get_size($fm_file).")</td></tr>
@@ -2935,6 +2950,7 @@ function config_form(){
             echo "
             </select>
         </td></tr>
+        <tr><td align=right width=1>".et('DateFormat').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" id=\"newdateformat\" name=\"newdateformat\" readonly autocomplete=\"off\" value=\"".html_encode($date_format)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\"></td></tr>
         <tr><td align=right>".et('Lang').":<td>
             <select name=newlang style=\"width:410px; padding:5px;\">
                 <option value=''>System Default
@@ -2961,18 +2977,12 @@ function config_form(){
                 <option value=\"2\">Show PHP Errors + ChromePhp Debug
             </select>
         </td></tr>";
-        if ($cfg->data['auth_pass'] == md5('')) {
-            echo "
-            <tr><td align=right>".et('Pass').":<td><input type=button class=\"btn noIcon\" value=\"".et('SetPass')."\" onclick=\"$(this).hide(); $('#".$newpassvar."').show(); $('#".$newpassvar."').val(''); $('#".$newpassvar."').focus();\">
-                <input type=password style=\"display:none; width:392px; padding:5px 8px;\" name=\"".$newpassvar."\" id=\"".$newpassvar."\" readonly autocomplete=\"off\" value=\"\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
-            </td></tr>";
-        } else {
-            echo "
-            <tr><td align=right>".et('Pass').":<td><input type=button class=\"btn noIcon\" value=\"".et('ChangePass')."\" onclick=\"$(this).hide(); $('#".$newpassvar."').show(); $('#".$newpassvar."').val(''); $('#".$newpassvar."').focus();\">
-                <input type=password style=\"display:none; width:392px; padding:5px 8px;\" name=\"".$newpassvar."\" id=\"".$newpassvar."\" readonly autocomplete=\"off\" value=\"\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
-            </td></tr>";
-        }
+        $show_pass = '';
+        if ($cfg->data['auth_pass'] != md5('')) $show_pass = $cfg->data['auth_pass'];
         echo "
+        <tr><td align=right>".et('Pass').":<td>
+            <input type=\"password\" style=\"width:392px; padding:5px 8px;\" name=\"newpass\" id=\"newpass\" readonly autocomplete=\"off\" value=\"".html_encode($show_pass)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
+        </td></tr>
         <tr><td>&nbsp;<td align=right><input type=button class=\"btn noIcon\" value=\"".et('SaveConfig')."\" onclick=\"test_config_form(1)\"></td></tr>
         </form>
         </table>
@@ -2996,7 +3006,8 @@ function config_form(){
             // To avoid autofill, because autocomplete=off simply does not work..
             window.setTimeout(function(){
                 $('#newfmroot').removeAttr('readonly');
-                $('#".$newpassvar."').removeAttr('readonly');
+                $('#newdateformat').removeAttr('readonly');
+                $('#newpass').removeAttr('readonly');
             },250);
         //-->
         </script>";
@@ -3235,7 +3246,7 @@ function portscan_form(){
         #portscanIframe {
             background: #FFF;
             width: 100%;
-            height: 630px;
+            height: 610px;
             overflow-y: scroll;
             overflow-x: auto;
             border: 1px solid #ccc;
@@ -3436,7 +3447,7 @@ function about_form(){
         #aboutIframe {
             background: #FFF;
             width: 100%;
-            height: 768px;
+            height: 750px;
             overflow-y: scroll;
             overflow-x: auto;
             border: 0px solid #ccc;
@@ -3811,6 +3822,8 @@ function shell_form(){
                     if ($is_windows && strpos($user,'\\') !== false){
                         $user = ucfirst(substr($user,strpos($user,'\\')+1));
                     }
+                } else {
+                    $user = '';
                 }
             }
             $group = '';
@@ -3978,7 +3991,7 @@ function logout(){
     echo "
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
-        window.top.document.location.href='".$fm_path_info["basename"]."';
+        window.parent.document.location.href='".$fm_path_info["basename"]."';
     //-->
     </script>";
 }
@@ -4004,7 +4017,7 @@ function login_form(){
         </table>
         <script language=\"Javascript\" type=\"text/javascript\">
         <!--
-            window.top.document.location.href='".$fm_path_info["basename"]."';
+            window.parent.document.location.href='".$fm_path_info["basename"]."';
         //-->
         </script>";
     } else {
@@ -4085,6 +4098,7 @@ function frame3(){
         $order_dir_list_by = $or_by;
         setcookie("order_dir_list_by", $or_by , time()+$cookie_cache_time , "/");
     }
+    setcookie("fm_current_dir", $fm_current_dir, 0 , "/");
     html_header();
     echo "<body>\n";
     if ($action){
@@ -4229,16 +4243,22 @@ function frame3(){
             case 72: // decompress arq
             if (strlen($cmd_arg)){
                 if (file_exists($fm_current_dir.$cmd_arg)){
-                    $file = false;
-                    if (strstr($cmd_arg,".zip")) zip_extract(); // Use PHP extension to decompress, because the native classe does not do a goog job with special chars
-                    elseif (strstr($cmd_arg,".bzip")||strstr($cmd_arg,".bz2")||strstr($cmd_arg,".tbz2")||strstr($cmd_arg,".bz")||strstr($cmd_arg,".tbz")) $file = new bzip_file($cmd_arg);
-                    elseif (strstr($cmd_arg,".gzip")||strstr($cmd_arg,".gz")||strstr($cmd_arg,".tgz")) $file = new gzip_file($cmd_arg);
-                    elseif (strstr($cmd_arg,".tar")) $file = new tar_file($cmd_arg);
-                    if ($file){
-                        $file->set_options(array('basedir'=>$fm_current_dir,'overwrite'=>1));
-                        $file->extract_files();
+                    if (strstr($cmd_arg,".zip") && class_exists('ZipArchive')) {
+                        $zipArchive = new ZipArchive();
+                        if ($zipArchive->open($cmd_arg) === true) {
+                            $zipArchive->extractTo($fm_current_dir);
+                            $zipArchive->close();
+                        }
+                    } else {
+                        if (strstr($cmd_arg,".bzip")||strstr($cmd_arg,".bz2")||strstr($cmd_arg,".tbz2")||strstr($cmd_arg,".bz")||strstr($cmd_arg,".tbz")) $file = new bzip_file($cmd_arg);
+                        elseif (strstr($cmd_arg,".gzip")||strstr($cmd_arg,".gz")||strstr($cmd_arg,".tgz")) $file = new gzip_file($cmd_arg);
+                        elseif (strstr($cmd_arg,".tar")) $file = new tar_file($cmd_arg);
+                        if ($file){
+                            $file->set_options(array('basedir'=>$fm_current_dir,'overwrite'=>1));
+                            $file->extract_files();
+                        }
+                        unset($file);
                     }
-                    unset($file);
                     reloadframe("parent",2);
                 }
             }
@@ -5054,6 +5074,7 @@ function et($tag){
     $et['en']['Version'] = 'Version';
     $et['en']['DocRoot'] = 'Document Root';
     $et['en']['FMRoot'] = 'File Manager Root';
+    $et['en']['DateFormat'] = 'Date Format';
     $et['en']['Name'] = 'Name';
     $et['en']['And'] = 'and';
     $et['en']['Enter'] = 'Enter';
@@ -5172,6 +5193,7 @@ function et($tag){
     $et['pt']['Version'] = 'Versão';
     $et['pt']['DocRoot'] = 'Document Root';
     $et['pt']['FMRoot'] = 'File Manager Root';
+    $et['pt']['DateFormat'] = 'Formato de Data';
     $et['pt']['Name'] = 'Nome';
     $et['pt']['And'] = 'e';
     $et['pt']['Enter'] = 'Entrar';
