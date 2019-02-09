@@ -808,7 +808,7 @@ function html_header($header=""){
             padding: 0 1px;
         }
         .fm-disk-info span {
-			display: inline-block;
+            display: inline-block;
             margin: 2px 0;
             font-weight: 700;
         }
@@ -838,7 +838,7 @@ function html_header($header=""){
             border: 1px solid #ccc;
         }
         .form-signin-heading {
-			margin-top: 0;
+            margin-top: 0;
             margin-bottom: 18px;
             white-space: nowrap;
         }
@@ -854,13 +854,13 @@ function html_header($header=""){
         }
         .form-signin input[type=\"password\"] {
             max-width: calc(100% - 80px);
-			float: left;
+            float: left;
         }
         .alert {
             position: relative;
             padding: 5px 10px;
             border: 1px solid transparent;
-			clear: both;
+            clear: both;
         }
         .alert-danger {
             color: #721c24;
@@ -1572,6 +1572,7 @@ function dir_list_form() {
         while (($entry = readdir($opdir)) !== false) {
             if ($entry == "." || $entry == "..") continue;
             $entry_list[$entry_count]["name"] = $entry;
+            $entry_list[$entry_count]["namet"] = $entry;
             $entry_list[$entry_count]["size"] = 0;
             $entry_list[$entry_count]["sizet"] = 0;
             $entry_list[$entry_count]["type"] = "none";
@@ -1589,9 +1590,12 @@ function dir_list_form() {
                 }
             }
             if (is_link($fm_current_dir.$entry)){
-                $entry_list[$entry_count]["link_target"] = readlink($fm_current_dir.$entry);
-                $ext = lowercase(strrchr($entry,"."));
                 $entry_list[$entry_count]["type"] = "link";
+                $entry_list[$entry_count]["target"] = readlink($fm_current_dir.$entry);
+                if (is_dir($entry_list[$entry_count]["target"])) $entry_list[$entry_count]["type"] = "dir";
+                elseif (is_file($entry_list[$entry_count]["target"])) $entry_list[$entry_count]["type"] = "file";
+                $entry_list[$entry_count]["namet"] = $entry.' <span style="float:right; margin-top:3px;" title="symlink to '.$entry_list[$entry_count]["target"].'">(L)</span>';
+                $ext = lowercase(strrchr($entry,"."));
                 $entry_list[$entry_count]["size"] = filesize($fm_current_dir.$entry);
                 $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
                 if (strstr($ext,".")){
@@ -2103,7 +2107,7 @@ function dir_list_form() {
                     $dir_out[$dir_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
                         <td><nobr><span class=\"fa fa-folder\"></span>
-                        <a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:go_dir_list('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
+                        <a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:go_dir_list('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></nobr></td>";
                     $dir_out[$dir_count][] = "<td>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $dir_out[$dir_count][] = "<td><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -2126,7 +2130,7 @@ function dir_list_form() {
                     $file_out[$file_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
                         <td><nobr><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span>
-                        <a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:download_entry('".addslashes($file)."')\">".utf8_convert($file)."</a></nobr></td>";
+                        <a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:download_entry('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></nobr></td>";
                     $file_out[$file_count][] = "<td>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $file_out[$file_count][] = "<td><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -4024,9 +4028,9 @@ function login_form(){
         echo "
         <form class=\"form-signin noScriptHidden mt-4\" name=\"login_form\" action=\"" . $fm_path_info["basename"] . "\" method=\"post\">
             <h2 class=\"form-signin-heading text-center\">".et('FileMan')."</h2>
-          	<input type=\"password\" class=\"form-control\" name=\"pass\" placeholder=\"".et('Pass')."\" required=\"\"/>
+            <input type=\"password\" class=\"form-control\" name=\"pass\" placeholder=\"".et('Pass')."\" required=\"\"/>
             <button type=\"submit\" class=\"btn noIcon\" style=\"float:right\" value=\"".et('Login')."\">".et('Login')."</button>
-			<div style=\"clear:both\"></div>";
+            <div style=\"clear:both\"></div>";
         if (strlen($erro)) echo "
             <div class=\"alert alert-danger\" style=\"margin-top: 10px;\">".et('InvPass')."</div>";
         echo "
@@ -6505,7 +6509,7 @@ function et($tag){
     $et['cn']['ChangePass'] = '修改密码';
     $et['cn']['Portscan'] = '端口扫描';
 
-	// Ukrainian - by Андрій Литвин
+    // Ukrainian - by Андрій Литвин
     $et['ua']['Version']='Версія';
     $et['ua']['DocRoot']='Коренева тека';
     $et['ua']['FMRoot']='Коренева тека файлового менеджера';
