@@ -2,7 +2,9 @@
 https://sourceforge.net/projects/phpfm/
 
 phpFileManager is a complete filesystem management tool on a single file.
+
 This is a tool meant for rapid file access, and also to verify the server php configuration and security.
+The script can be renamed and deployed on an unique known url, and offers password protection.
 
 Online Demo: https://phpfm-demo.000webhostapp.com
 Feel free to mess around! This is a public demo installation, and will reset itself every 30 min.
