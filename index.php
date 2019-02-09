@@ -583,17 +583,20 @@ function system_exec_file(){
     header("Content-type: text/plain");
     $file = $fm_current_dir.$filename;
     if(file_exists($file)){
-        $fm_current_dir = get_absolute_path($fm_current_dir);
-        $cmd_line = '';
-        if ($is_windows) {
-            $cmd_line .= "cd /D ".$fm_current_dir." && ";
-        } else {
-            $cmd_line .= "cd ".$fm_current_dir." && ";
-        }
-        $cmd_line .= $file;
-        echo "# ".$cmd_line."\n";
-        system_exec_cmd($cmd_line, $output);
-        echo $output;
+        if (!is_executable($file)) @chmod($file,0755);
+        if (is_executable($file)) {
+            $fm_current_dir = get_absolute_path($fm_current_dir);
+            $cmd_line = '';
+            if ($is_windows) {
+                $cmd_line .= "cd /D ".$fm_current_dir." && ";
+            } else {
+                $cmd_line .= "cd ".$fm_current_dir." && ";
+            }
+            $cmd_line .= $file;
+            echo "# ".$cmd_line."\n";
+            system_exec_cmd($cmd_line, $output);
+            echo $output;
+        } else echo('Error: '.$file.' is not executable...');
     } else echo(et('FileNotFound').": ".$file);
 }
 function save_upload($temp_file,$filename,$dir_dest) {
@@ -1488,6 +1491,18 @@ function dirsize($path){
     }
     return $size;
 }
+function is_textfile($file){
+    if (filesize($file) > 0){
+        // This only works for PHP>=5.3.0, and isn't 100% reliable, but hey, it's pretty darn close.
+        if (function_exists('finfo_open') && function_exists('finfo_file')){
+            // return mime type ala mimetype extension
+            $finfo = finfo_open(FILEINFO_MIME);
+            //check to see if the mime-type starts with 'text'
+            return substr(finfo_file($finfo, $file), 0, 4) == 'text';
+        }
+    }
+    return true;
+}
 function dir_list_form() {
     global $fm_current_root,$fm_current_dir,$quota_mb,$resolve_ids,$order_dir_list_by,$is_windows,$cmd_name,$ip,$lan_ip,$fm_path_info,$version,$date_format;
     $ti = getmicrotime();
@@ -2146,10 +2161,10 @@ function dir_list_form() {
                     if ( is_writable($fm_current_dir.$file) ) $file_out[$file_count][] = "
                                 <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:rename_entry('".addslashes($file)."')\">".et('Ren')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
-                    if ( is_readable($fm_current_dir.$file) && (strlen($dir_entry["ext"]) == 0 || strpos(".wav#.mp3#.mid#.avi#.mov#.mpeg#.mpg#.rm#.iso#.bin#.img#.dll#.psd#.fla#.swf#.class#.ppt#.tif#.tiff#.pcx#.jpg#.gif#.png#.wmf#.eps#.bmp#.msi#.exe#.com#.rar#.tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry["ext"]."#" ) === false)) $file_out[$file_count][] = "
+                    if ( is_readable($fm_current_dir.$file) && is_textfile($fm_current_dir.$file) ) $file_out[$file_count][] = "
                                 <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:edit_file_form('".addslashes($file)."')\">".et('Edit')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
-                    if ( is_readable($fm_current_dir.$file) && (strpos(".txt#.sys#.bat#.ini#.conf#.swf#.html#.htm#.jpg#.gif#.png#.bmp#.php#.php3#.asp#", $dir_entry["ext"]."#" ) !== false) ) $file_out[$file_count][] = "
+                    if ( is_readable($fm_current_dir.$file) && is_textfile($fm_current_dir.$file) ) $file_out[$file_count][] = "
                                 <td align=center><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:view_form('".addslashes($file)."');\">".et('View')."</a>";
                     else $file_out[$file_count][] = "<td>&nbsp;</td>";
                     if ( is_readable($fm_current_dir.$file) && strlen($dir_entry["ext"]) && (strpos(".tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry["ext"]."#" ) !== false) ) $file_out[$file_count][] = "
@@ -2766,21 +2781,26 @@ function view_form(){
     } else {
         html_header();
         echo "<body marginwidth=\"0\" marginheight=\"0\">";
+        $title = et("View").' '.addslashes($filename);
         $is_reachable_thru_webserver = (stristr($fm_current_dir,$doc_root)!==false);
         if ($is_reachable_thru_webserver){
             $url  = $url_info["scheme"]."://".$url_info["host"];
             if (strlen($url_info["port"])) $url .= ":".$url_info["port"];
             $url .= str_replace(DIRECTORY_SEPARATOR,'/',str_replace($doc_root,'',$fm_current_dir));
             $url .= $filename;
+            $title = et("View").' '.$url;
         } else {
             $url  = addslashes($fm_path_info["basename"]);
             $url .= "?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename=".rawurldecode($filename)."&passthru=1";
+            $title = et("View").' '.addslashes($fm_current_dir.$filename);
         }
         //fb_log('url',$url);
         echo "
         <script language=\"Javascript\" type=\"text/javascript\">
         <!--
-            document.location.href='$url';
+            var el = window.parent.document.getElementById(\"modalIframeWrapperTitle\");
+            if (el) el.innerHTML = \"".html_encode($title)."\";
+            document.location.href = '".$url."';
         //-->
         </script>
         </body>\n</html>";
