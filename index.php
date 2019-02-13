@@ -399,7 +399,7 @@ function get_group_name($gid) {
         }
     }
     if (function_exists('posix_getgrgid')) {
-        $info = posix_getgrgid($uid);
+        $info = posix_getgrgid($gid);
         return $info['name'];
     }
     return $gid;
@@ -425,6 +425,7 @@ function get_user_groups($user_name) {
     return $resul;
 }
 function is_rwx_phpfm($file,$what='r'){
+    global $is_windows;
     // Note: You can only change the uid/euid of the current process when one of the two is currently set to 0 (root).
     // groupadd gteste
     // usermod -a -G gteste www-data
@@ -462,11 +463,7 @@ function is_rwx_phpfm($file,$what='r'){
 
         }
         if (!strlen($GLOBALS['script_info']['script_user_name'])) {
-            if (system_exec_cmd('whoami',$GLOBALS['script_info']['script_user_name'])) {
-                if ($is_windows && strpos($GLOBALS['script_info']['script_user_name'],'\\') !== false){
-                    $GLOBALS['script_info']['script_user_name'] = ucfirst(substr($GLOBALS['script_info']['script_user_name'],strpos($GLOBALS['script_info']['script_user_name'],'\\')+1));
-                }
-            } else {
+            if (!system_exec_cmd('whoami',$GLOBALS['script_info']['script_user_name'])) {
                 $GLOBALS['script_info']['script_user_name'] = '';
             }
         }
@@ -475,6 +472,9 @@ function is_rwx_phpfm($file,$what='r'){
         }
         if (!strlen($GLOBALS['script_info']['script_user_name'])){
             $GLOBALS['script_info']['script_user_name'] = @getenv('USERNAME') ? : @getenv('USER');
+        }
+        if ($is_windows && strpos($GLOBALS['script_info']['script_user_name'],'\\') !== false){
+            $GLOBALS['script_info']['script_user_name'] = ucfirst(substr($GLOBALS['script_info']['script_user_name'],strpos($GLOBALS['script_info']['script_user_name'],'\\')+1));
         }
         if (function_exists('posix_getgrgid')) {
             $info = posix_getgrgid($GLOBALS['script_info']['script_group_id']);
@@ -4393,6 +4393,7 @@ function shell_form(){
                 <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery.terminal.min.js\"></script>
                 <link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=jquery.terminal.min.css\" media=\"screen\" />
             ");
+            is_rwx_phpfm(__FILE__); // Init $GLOBALS['script_info']
             $username = $GLOBALS['script_info']['script_user_name'];
             $groupname = $GLOBALS['script_info']['script_group_name'];
             $hostname = $GLOBALS['script_info']['sys_hostname'];
