@@ -852,6 +852,13 @@ function download(){
         } else alert(et('ReadDenied').": ".$file);
     } else alert(et('FileNotFound').": ".$file);
 }
+// Returns the full path of the current PHP executable
+function linux_get_proc_name(){
+    $output = '';
+    $ok = system_exec_cmd("readlink -f /proc/".posix_getpid()."/exe",$output);
+    if (!$ok) return false;
+    return $output;
+}
 function system_exec_file(){
     global $fm_current_dir,$filename,$debug_mode;
     if ($debug_mode) {
@@ -870,6 +877,12 @@ function system_exec_file(){
             } else {
                 $cmd_line .= "cd ".$fm_current_dir." && ";
             }
+            // TODO: verificar e usar interpretador correto
+            // php -f /script.php
+            // bash /script.sh
+            // sh /script.sh
+            // python /script.py
+            // perl /script.pl
             $cmd_line .= $file;
             echo "# ".$cmd_line."\n";
             system_exec_cmd($cmd_line, $output);
@@ -4246,6 +4259,7 @@ function system_exec_cmd($cmd, &$output){
                 $exec_ok = (intval($exitCode) == 0); // 0 = success
                 $output = trim(implode("\n",$outputArr));
             } elseif (function_exists('shell_exec')) {
+                // The backtick operator is disabled when safe mode is enabled or shell_exec() is disabled.
                 $output = @shell_exec($cmd);
                 if ($output === NULL){
                     $output = '';
@@ -4269,7 +4283,7 @@ function system_exec_cmd($cmd, &$output){
             } elseif (function_exists('popen')) {
                 $exec_ok = cmd_popen_exec($cmd, $output);
             } else {
-                $output = "PHP exec functions are disabled on server.";
+                $output = "Error: PHP exec functions disabled..";
             }
         }
     }
@@ -4403,6 +4417,21 @@ function shell_form(){
             if (strlen($hostname)) $prompt_start .= '@'.$hostname;
             if ($username == 'root') $prompt_end .= ']# ';
             else $prompt_end .= ']$ ';
+            $greetings = array();
+            $greetings[] = 'PHP File Manager - Shell Terminal Emulator';
+            $exec_functions = array('proc_open','exec','shell_exec','system','passthru','popen');
+            $is_exec_disabled = true;
+            foreach ($exec_functions as $f) {
+                if (function_exists($f)) {
+                    $is_exec_disabled = false;
+                    break;
+                }
+            }
+            if ($is_exec_disabled) {
+                $greetings[] = '';
+                $greetings[] = 'Warning: All PHP system exec functions are disabled.';
+                $greetings[] = implode('(),',$exec_functions).'()';
+            }
             ?>
             <body marginwidth="0" marginheight="0">
                 <script>
@@ -4462,7 +4491,7 @@ function shell_form(){
                                 }
                             },
                             {
-                                greetings: get_boxed_text('PHP File Manager - Shell Terminal Emulator'),
+                                greetings: get_boxed_text('<?php echo implode('\n',$greetings)?>'),
                                 prompt: function(callback) {
                                     //console.log(fm_current_dir);
                                     callback('<?php echo $prompt_start; ?> '+fm_current_dir+'<?php echo $prompt_end; ?>');
