@@ -4631,9 +4631,10 @@ function frame3(){
         ignore_user_abort(true);
         ini_set("display_errors",0);
         ini_set("max_execution_time",0);
-        $filename = str_replace(DIRECTORY_SEPARATOR,'-',$fm_current_dir).'-'.date('Y.m.d-H\hi').'.zip';
+        $filename = trim(str_replace(DIRECTORY_SEPARATOR,'-',$fm_current_dir),'-');
         $filename = str_replace(':','-',$filename);
         $filename = replace_double('-',$filename);
+        $filename = trim($filename,'-').'-'.date('Y.m.d-H\hi').'.zip';
         $file = new zip_file($filename);
         if ($file){
             $file->set_options(array('basedir'=>$fm_current_dir,'overwrite'=>1,'level'=>3,'inmemory'=>1));
