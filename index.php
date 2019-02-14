@@ -2,12 +2,12 @@
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
- | phpFileManager 1.7.5
+ | phpFileManager 1.7.6
  | By Fabricio Seger Kolling
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-02-13
+ | Last Changed: 2019-02-14
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.5';
+$version = '1.7.6';
 $charset = 'UTF-8';
 $debug_mode = false;
 $max_php_recursion = 200;
@@ -743,10 +743,8 @@ function php_get_total_size($path) {
 }
 function php_get_total_size_execute($path) {
     global $debug_mode,$max_php_recursion,$max_php_recursion_counter;
-    if ($debug_mode) {
-        fb_log('php_get_total_size_execute',$path);
-        return 0;
-    }
+    fb_log('php_get_total_size_execute',$path);
+    if ($debug_mode) return 0;
     $total_size = 0;
     if (is_dir($path)) {
         $entry_list = scandir(fs_encode($path));
@@ -771,42 +769,50 @@ function php_get_total_size_execute($path) {
     }
     return $total_size;
 }
-function total_delete($path) {
+function total_delete($path,$followlinks=false,$checkhardlinks=true) {
     global $debug_mode;
-    if ($debug_mode) {
-        fb_log('total_delete',$path);
-        return;
-    }
+    fb_log('total_delete',$path);
+    if ($debug_mode) return;
+    // TODO: $checkhardlinks will not allow to delete anything that has other links on the system, using stat() to avoid creating brokenlinks. Add a warning and complete action;.
     if (file_exists($path)) {
         @chmod($path,0755);
         if (is_dir($path)) {
             $entry_list = scandir(fs_encode($path));
             foreach ($entry_list as $entry) {
                 if ($entry == "." || $entry == "..") continue;
-                total_delete($path.DIRECTORY_SEPARATOR.$entry);
+                if ($followlinks == false && is_link(rtrim($path,DIRECTORY_SEPARATOR))) continue;
+                total_delete($path.DIRECTORY_SEPARATOR.$entry,$followlinks,$checkhardlinks);
             }
-            @rmdir($path);
+            if (is_link($path)) @unlink($path);
+            else @rmdir($path);
         } else {
             @unlink($path);
         }
+    } elseif (is_link($path)) {
+        @unlink($path); // Broken links must be removed
     }
 }
-function total_copy($orig,$dest) {
+function total_copy($orig,$dest,$copylinks=true,$followlinks=false) {
     global $debug_mode;
-    if ($debug_mode) {
-        fb_log('total_copy',$orig.' => '.$dest);
-        return;
-    }
+    fb_log('total_copy',$orig.' => '.$dest);
+    if ($debug_mode) return;
     $ok = true;
-    if (file_exists($orig)) {
-        if (is_dir($orig)) {
+    if (file_exists($orig) || is_link($orig)) {
+        if ($copylinks == true && is_link($orig)){
+            $ok = link(readlink($orig), $dest);
+            if (!$ok) $ok = link($orig, $dest); // Allow copy of broken links, but rather copy the link to the target, as the link was.
+        } elseif (is_dir($orig)) {
             $ok = mkdir(fs_encode($dest),0755);
             if ($ok) {
                 $entry_list = scandir(fs_encode($orig));
                 foreach ($entry_list as $entry) {
-                    if (!$ok) break;
                     if ($entry == "." || $entry == "..") continue;
-                    $ok = total_copy($orig.DIRECTORY_SEPARATOR.$entry,$dest.DIRECTORY_SEPARATOR.$entry);
+                    if ($followlinks == false && is_link(rtrim($orig,DIRECTORY_SEPARATOR))){
+                        link(readlink($orig.DIRECTORY_SEPARATOR.$entry), $dest.DIRECTORY_SEPARATOR.$entry);
+                    } else {
+                        $ok = total_copy($orig.DIRECTORY_SEPARATOR.$entry, $dest.DIRECTORY_SEPARATOR.$entry, $copylinks, $followlinks);
+                    }
+                    if (!$ok) break;
                 }
             }
         } else {
@@ -817,20 +823,16 @@ function total_copy($orig,$dest) {
 }
 function total_move($orig,$dest) {
     global $debug_mode;
-    if ($debug_mode) {
-        fb_log('total_move',$orig.' => '.$dest);
-        return;
-    }
+    fb_log('total_move',$orig.' => '.$dest);
+    if ($debug_mode) return;
     // Just why doesn't it has a MOVE alias?!
     return rename((string)$orig,(string)$dest);
 }
 function download(){
     global $fm_current_dir,$filename,$debug_mode;
     $file = $fm_current_dir.$filename;
-    if ($debug_mode) {
-        fb_log('download',$file);
-        return;
-    }
+    fb_log('download',$file);
+    if ($debug_mode) return;
     if(file_exists($file)){
         $is_denied = false;
         foreach($download_ext_filter as $key=>$ext){
@@ -861,10 +863,8 @@ function linux_get_proc_name(){
 }
 function system_exec_file(){
     global $fm_current_dir,$filename,$debug_mode;
-    if ($debug_mode) {
-        fb_log('system_exec_file',$filename);
-        return;
-    }
+    fb_log('system_exec_file',$filename);
+    if ($debug_mode) return;
     header("Content-type: text/plain");
     $file = $fm_current_dir.$filename;
     if(file_exists($file)){
@@ -892,10 +892,8 @@ function system_exec_file(){
 }
 function save_upload($temp_file,$filename,$dir_dest) {
     global $upload_ext_filter,$debug_mode;
-    if ($debug_mode) {
-        fb_log('save_upload',$temp_file.' => '.$dir_dest.$filename);
-        return;
-    }
+    fb_log('save_upload',$temp_file.' => '.$dir_dest.$filename);
+    if ($debug_mode) return;
     $filename = remove_special_chars($filename);
     $file = $dir_dest.$filename;
     $filesize = filesize($temp_file);
@@ -973,6 +971,54 @@ function fix_url($str) {
     $str = replace_double('-', $str);
     $str = trim($str,'-');
     return $str;
+}
+function fix_filename($str,$allowSpaces=false){ // no filesystem não podemos ter acentos
+    $str = remove_acentos(trim($str));
+    // Substitui caracteres reservados
+    $str = str_replace('\\', '_', $str);
+    $str = str_replace('/', '_', $str);
+    $str = str_replace(':', '_', $str);
+    $str = str_replace('*', '_', $str);
+    $str = str_replace('?', '_', $str);
+    $str = str_replace('"', '_', $str);
+    $str = str_replace('<', '_', $str);
+    $str = str_replace('>', '_', $str);
+    $str = str_replace('|', '_', $str);
+    if ($allowSpaces){
+        // Apenas caracteres válidos
+        $str = str_strip($str,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-0123456789.()[]& ");
+        $str = replace_double(' ', $str);
+        $str = trim($str);
+    } else {
+        $str = str_replace(' ', '_', $str);
+        // Apenas caracteres válidos
+        $str = str_strip($str,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-0123456789.()[]&");
+    }
+    $str = replace_double('_', $str);
+    $str = trim($str,'_');
+    return $str;
+}
+function fix_filename_download($str){ // no download podemos ter acentos
+    $str = trim($str);
+    // Substitui caracteres reservados
+    $str = str_replace('\\', ' ', $str);
+    $str = str_replace('/', ' ', $str);
+    $str = str_replace(':', ' ', $str);
+    $str = str_replace('*', ' ', $str);
+    $str = str_replace('?', ' ', $str);
+    $str = str_replace('"', ' ', $str);
+    $str = str_replace('<', ' ', $str);
+    $str = str_replace('>', ' ', $str);
+    $str = str_replace('|', ' ', $str);
+    // Apenas caracteres válidos
+    $str = str_strip($str,"ÁÀÃÂÉÊÈËÍÓÔÕÒÚÜÇÑáàãâéêèëíóõôòúüçñABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-0123456789.()[] ");
+    $str = replace_double(' ', $str);
+    $str = trim($str);
+    return $str;
+}
+function add_http($str){
+    if (mb_strlen($str) > 0 && mb_strpos($str, 'http://') === false && mb_strpos($str, 'https://') === false) return 'http://'.$str;
+    else return $str;
 }
 function remove_sinais($str){
     $sinais = "./\\-,:;'`~?!\"<>{}[]@#\$%^&*()_+=|";
@@ -1307,8 +1353,22 @@ function html_header($header=""){
             width: 10px;
             padding: .3rem .6rem;
         }
-        .entry_name {
-            padding-right: 70px;
+        table.entry_name_table {
+            width: 100%;
+        }
+        table.entry_name_table td {
+            border: none;
+            white-space: nowrap;
+            padding: 0;
+        }
+        table.entry_name_table td.entry_name {
+            padding-right: 60px;
+            padding-top: 3px;
+        }
+        table.entry_name_table td .fa {
+            margin-top: 0;
+            margin-left: -6px;
+            margin-right: 3px;
         }
         .form-signin {
             max-width: 350px;
@@ -1392,10 +1452,13 @@ function html_header($header=""){
         .fa.fa-add-file { background-position: -54px 0; }
         .fa.fa-upload { background-position: -453px 0; }
         .fa.fa-file-go { background-position: -470px 0; }
+        .fa.fa-link { background-position: -488px -18px; }
         .fa.fa-find { background-position: -380px 0; }
         .fa.fa-file-light { background-position: -470px -18px; }
         .fa.fa-file-remove { background-position: -290px 0; }
         .fa.fa-file-config { background-position: -308px 0; }
+        .fa.fa-resolve { background-position: -272px 0; }
+        .fa.fa-perms { background-position: -344px 0; }
         .fa.fa-copy { background-position: -198px 0; }
         .fa.fa-copy-o { background-position: -198px -18px; }
         .fa.fa-edit { background-position: -326px 0; }
@@ -1685,9 +1748,15 @@ class tree_fs {
         if(!$lst) { fb_log('Could not list path: '.$path); }
         $res = array();
         foreach($lst as $item) {
-            if($item == '.' || $item == '..' || $item === null) { continue; }
+            if ($item == '.' || $item == '..' || $item === null) { continue; }
             $item_path = rtrim($path,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$item;
-            if(is_dir($item_path)) {
+            if (is_dir($item_path)) {
+                if (is_link($item_path)) $item .= ' (L)';
+                $res[] = array('text' => utf8_convert($item), 'children' => true,  'id' => utf8_convert($this->id($item_path)), 'icon' => 'folder');
+            } elseif (is_link($item_path) && !is_file($item_path)) {
+                // Add &#8202; Invisible char to change color to RED using Jquery https://stackoverflow.com/questions/17978720/invisible-characters-ascii
+                // TODO: Find a better way to show RED broken folder links, using jsTree API
+                if (is_link($item_path)) $item .= ' (L*)';
                 $res[] = array('text' => utf8_convert($item), 'children' => true,  'id' => utf8_convert($this->id($item_path)), 'icon' => 'folder');
             }
         }
@@ -1809,8 +1878,8 @@ function frame2(){
             }
         }
         if (count($fm_root_opts)>1) echo "<select name=drive onchange=\"set_fm_current_root(this.value)\" style=\"float:left; margin:1px 0 5px 0; margin-right:5px; padding:5px;\">".implode("\n",$fm_root_opts)."</select>";
-        echo "<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn\" onclick=\"refresh_tree()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button>";
-        if ($auth_pass != md5('')) echo "&nbsp;<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
+        echo "<button style=\"margin-bottom: 5px;\" class=\"btn\" onclick=\"refresh_tree()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button>";
+        if ($auth_pass != md5('')) echo "&nbsp;<button style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
     echo "</form>";
     echo "</td></tr>";
     echo "<tr valign=top><td>";
@@ -1858,6 +1927,11 @@ function frame2(){
         var tree_auto_load_nodes = <?php echo json_encode($tree_auto_load_nodes); ?>;
         var tree_auto_load_node_curr = 0;
         //console.log(tree_auto_load_nodes);
+        function highlight_broken_links(){
+            $("#tree a:contains('(L*)')").css({'color':'red'});
+            var str = $("#tree a:contains('(L*)')").html();
+            $("#tree a:contains('(L*)')").html(String(str).replace('(L*)','(L)'));
+        }
         function tree_auto_load(){
             if (tree_auto_load_node_curr > tree_auto_load_nodes.length) return;
             var node_id = '/'+tree_auto_load_nodes.slice(0, tree_auto_load_node_curr+1).join('/');
@@ -1869,6 +1943,7 @@ function frame2(){
             if (tree_auto_load_node_curr == tree_auto_load_nodes.length) {
                 if (node.length) {
                     $("#tree").jstree(true).open_node(node, function(){
+                        highlight_broken_links();
                         $('#tree').jstree(true).select_node(node,true);
                         tree_loaded = true;
                     }, false);
@@ -1882,6 +1957,7 @@ function frame2(){
                     tree_auto_load();
                 }
             }
+            highlight_broken_links();
         }
         $(function () {
             $('#tree')
@@ -1913,7 +1989,8 @@ function frame2(){
                     },
                     'types' : {
                         'default' : { 'icon' : 'folder' },
-                        'file' : { 'valid_children' : [], 'icon' : 'file' }
+                        'file' : { 'valid_children' : [], 'icon' : 'file' },
+                        'broken_link': { 'icon' : 'folder' }
                     },
                     'unique' : {
                         'duplicate' : function (name, counter) {
@@ -2079,8 +2156,16 @@ function dir_list_form() {
                     $entry_list[$entry_count]["size"] = filesize($fm_current_dir.$entry);
                     $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
                     $has_files = true;
+                } else {
+                    $entry_list[$entry_count]["type"] = "broken_link";
+                    $entry_list[$entry_count]["date"] = '';
+                    $entry_list[$entry_count]["time"] = '';
+                    $entry_list[$entry_count]["datet"] = '';
+                    $entry_list[$entry_count]["size"] = 0;
+                    $entry_list[$entry_count]["sizet"] = '';
+                    $entry_list[$entry_count]["p"] = '';
                 }
-                $entry_list[$entry_count]["namet"] = $entry.' <span style="float:right; margin-top:3px;" title="symlink to '.$entry_list[$entry_count]["target"].'">(L)</span>';
+                $entry_list[$entry_count]["linkt"] = '<span style="float:right; margin-top:3px; font-weight:bold;" title="symlink to '.$entry_list[$entry_count]["target"].'">(L)</span>';
                 $ext = lowercase(strrchr($entry,"."));
                 if (strstr($ext,".")){
                     $entry_list[$entry_count]["ext"] = $ext;
@@ -2294,12 +2379,14 @@ function dir_list_form() {
     var total_dirs_selected = 0;
     var total_files_selected = 0;
     var total_size_selected = 0;
+    var last_entry_selected = '';
     function select(Entry){
         if(Entry.selected) return false;
         Entry.selected = true;
         total_size_selected += parseInt(Entry.size);
         if(Entry.type == 'dir') total_dirs_selected++;
         else total_files_selected++;
+        last_entry_selected = Entry.name;
         document.form_action.chmod_arg.value = Entry.perms;
         update_footer_selection_total_status();
         return true;
@@ -2474,12 +2561,15 @@ function dir_list_form() {
     }
     function rename_entry(arg){
         var nome = '';
-        if (nome = prompt('".uppercase(et('Ren'))." \\''+arg+'\\' ".et('To')." ...')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
+        if (nome = prompt('".uppercase(et('Ren'))." \\''+arg+'\\' ".et('To')." ...',arg)) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
     }
     function set_dir_dest(arg){
-        document.form_action.dir_dest.value=arg;
-        if (document.form_action.action.value.length>0) test(document.form_action.action.value);
-        else alert('".et('JSError').".');
+        document.form_action.dir_dest.value = arg;
+        if (document.form_action.action.value.length > 0) {
+            test(document.form_action.action.value);
+        } else {
+            alert('".et('JSError').".');
+        }
     }
     function sel_dir(arg){
         document.form_action.action.value = arg;
@@ -2536,6 +2626,9 @@ function dir_list_form() {
             document.form_action.cmd_arg.value = prompt('".et('TypeArq').".');
         } else if (arg == 71){
             if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            var zipname = '';
+            if (last_entry_selected != '') zipname = last_entry_selected+'.zip';
+            if (total_files_selected + total_dirs_selected == 1) document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."',zipname);
             else document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."');
         }
         if (erro!=''){
@@ -2573,10 +2666,44 @@ function dir_list_form() {
             else if(document.form_action.dir_dest.value == document.form_action.fm_current_dir.value) erro = '".et('DestEqOrig').".';
             else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
             conf = '".et('MoveTo')." \\' '+document.form_action.dir_dest.value+' \\' ?\\n';
+        } else if (arg == 121 || arg == 122){
+            if (!is_anything_selected()) erro = '".et('NoSel')."...';
+            else if(document.form_action.dir_dest.value.length == 0) erro = '".et('NoDestDir').".';
+            else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
+            var total_itens_selected = 0;
+            var entry_name = '';
+            conf = '';
+            for(var x=0;x<".(integer)count($entry_list).";x++){
+                if(entry_list['entry'+x].selected){
+                    total_itens_selected++;
+                    if (entry_name == '') entry_name = entry_list['entry'+x].name;
+                    conf += document.form_action.dir_dest.value+entry_list['entry'+x].name+' 🡺 ".addslashes($fm_current_dir)."'+entry_list['entry'+x].name+'\\n';
+                }
+            }
+            if (total_itens_selected == 1) {
+                var link_name = prompt('Enter the Symlink name.',entry_name);
+                if (link_name === null) {
+                    cancel_copy_move();
+                    return;
+                }
+                link_name = String(link_name).trim();
+                if (link_name.length == 0) {
+                    cancel_copy_move();
+                    return;
+                }
+                document.form_action.cmd_arg.value = link_name;
+                conf = document.form_action.dir_dest.value+link_name+' 🡺 ".addslashes($fm_current_dir)."'+entry_name+'\\n';
+                if (arg == 121) conf = 'Create Symlink ?\\n'+conf;
+                else conf = 'Create Hardlink ?\\n'+conf;
+            } else {
+                document.form_action.cmd_arg.value = '';
+                if (arg == 121) conf = 'Create Symlinks ?\\n'+conf;
+                else conf = 'Create Hardlinks ?\\n'+conf;
+            }
         } else if (arg == 9){
             if (!is_anything_selected()) erro = '".et('NoSel')."...';
             else if(document.form_action.chmod_arg.value.length == 0) erro = '".et('NoNewPerm').".';
-            //conf = '".et('AlterPermTo')." \\' '+document.form_action.chmod_arg.value+' \\' ?\\n';
+            //conf = '".et('AlterPermTo')." \\''+document.form_action.chmod_arg.value+'\\' ?\\n';
         } else if (arg == 73){
             if (!is_anything_selected()) erro = '".et('NoSel')."...';
             else document.form_action.target='frame1';
@@ -2604,14 +2731,15 @@ function dir_list_form() {
         <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
         <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
             <div class=\"float-left\">
-                <button class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
-                <button class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
-                <button type=button class=\"btn\" onclick=\"test_prompt(1)\" value=\"" . et('CreateDir') . "\"> <i class=\"fa fa-folder\"></i> ".et('CreateDir')."</button>
-                <button type=button class=\"btn\" onclick=\"test_prompt(2)\" value=\"" . et('CreateArq') . "\"> <i class=\"fa fa-add-file\"></i> ".et('CreateArq')."</button>
-                <button class=\"btn\" onclick=\"upload_form()\" value=\"" . et('Upload') . "\"><i class=\"fa fa-upload\"></i> " . et('Upload') . "</button>
-                <button class=\"btn\" onclick=\"shell_form()\" value=\"" . et('Shell') . "\"><i class=\"fa fa-file-go\"></i> " . et('Shell') . "</button>
-                <button class=\"btn\" onclick=\"portscan_form()\" value=\"" . et('Portscan') . "\"><i class=\"fa fa-find\"></i> " . et('Portscan') . "</button>
-                <button type=button class=\"btn\" onclick=\"about_form()\" value=\"".et('About')."\"><i class=\"fa fa-glob\"></i> ".et('About')."</button>
+                <button type=\"button\" class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"test_prompt(1)\" value=\"" . et('CreateDir') . "\"> <i class=\"fa fa-folder\"></i> ".et('CreateDir')."</button>
+                <button type=\"button\" class=\"btn\" onclick=\"test_prompt(2)\" value=\"" . et('CreateArq') . "\"> <i class=\"fa fa-add-file\"></i> ".et('CreateArq')."</button>
+                <button type=\"button\" class=\"btn\" onclick=\"upload_form()\" value=\"" . et('Upload') . "\"><i class=\"fa fa-upload\"></i> " . et('Upload') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"shell_form()\" value=\"" . et('Shell') . "\"><i class=\"fa fa-file-go\"></i> " . et('Shell') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"portscan_form()\" value=\"" . et('Portscan') . "\"><i class=\"fa fa-find\"></i> " . et('Portscan') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa-resolve\"></i> " . et('ResolveIDs') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"about_form()\" value=\"".et('About')."\"><i class=\"fa fa-glob\"></i> ".et('About')."</button>
             </div>
         </form>
         </nobr>
@@ -2633,14 +2761,36 @@ function dir_list_form() {
         $mat = explode(DIRECTORY_SEPARATOR,$fm_current_dir);
         $dir_before = "";
         for($x=0;$x<(count($mat)-2);$x++) $dir_before .= $mat[$x].DIRECTORY_SEPARATOR;
-        if (strlen($dir_before)) $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=$dir_before\"><<</a>&nbsp;&nbsp;";
+        if (strlen($dir_before)) $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=$dir_before\">🡹</a>&nbsp;&nbsp;";
     }
     $breadcrumbs = array();
-    foreach (explode(DIRECTORY_SEPARATOR, $fm_current_dir) as $r) {
-        $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr($fm_current_dir, $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
+    foreach (explode(DIRECTORY_SEPARATOR, rtrim($fm_current_dir,DIRECTORY_SEPARATOR)) as $r) {
+        $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr(rtrim($fm_current_dir,DIRECTORY_SEPARATOR), $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
+    }
+    function get_link_breadcrumbs($path){
+        $out = '';
+        if (is_link(rtrim($path,DIRECTORY_SEPARATOR))){
+            $target = readlink(rtrim($path,DIRECTORY_SEPARATOR));
+            if (is_dir($target)){
+                $breadcrumbs = array();
+                foreach (explode(DIRECTORY_SEPARATOR, $target) as $r) {
+                    $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr($target, $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
+                }
+                if (count($breadcrumbs)){
+                    $out .= '&nbsp;<b>(L)</b>&nbsp;&nbsp;🡺&nbsp;&nbsp;'.implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs);
+                }
+                if (is_link($target)){
+                    $out .= get_link_breadcrumbs($target);
+                }
+            }
+        }
+        return $out;
     }
     $out .= "
-    <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding:8px;\" colspan=50><nobr>".$uplink.implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs)."</nobr></td></tr>";
+    <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding:8px;\" colspan=50><nobr>".$uplink;
+    $out .= implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs);
+    $out .= get_link_breadcrumbs($fm_current_dir);
+    $out .= "</nobr></td></tr>";
     if (!$io_error) {
         if($entry_count){
             $out .= "
@@ -2653,8 +2803,9 @@ function dir_list_form() {
                 <button type=\"button\" class=\"btn\" onclick=\"sel_dir(6)\"><i class=\"fa fa-file-go\"></i> " . et('Move') . "</button>
                 <button type=\"button\" class=\"btn\" onclick=\"test_prompt(71)\"><i class=\"fa fa-file-archive-o\"></i> " . et('Compress') . "</button>
                 <button type=\"button\" class=\"btn\" onclick=\"test(73)\"><i class=\"fa fa-download\"></i> ZIP " . et('Download') . "</button>
-                <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>
-                <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>
+                <button type=\"button\" class=\"btn\" onclick=\"sel_dir(121)\" value=\"" . et('Symlink') . "\"> <i class=\"fa fa-link\"></i> ".et('Symlink')."</button>
+                <button type=\"button\" class=\"btn\" onclick=\"sel_dir(122)\" value=\"" . et('HardLink') . "\"> <i class=\"fa fa-link\"></i> ".et('HardLink')."</button>
+                <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-perms\"></i> " . et('Perms') . "</button>
                 </nobr></td>
                 </tr>
                 <tr>
@@ -2667,12 +2818,19 @@ function dir_list_form() {
             $max_cells = 0;
             foreach ($entry_list as $ind=>$dir_entry) {
                 $file = $dir_entry["name"];
-                if ($dir_entry["type"]=="dir"){
+                if ($dir_entry["type"] == "dir") {
                     $dir_out[$dir_count] = array();
                     $dir_out[$dir_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
-                        <td class=\"sm\"><nobr><span class=\"fa fa-folder\"></span>
-                        <a class=\"entry_name\" onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:go_dir_list('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></nobr></td>";
+                        <td class=\"sm\">
+                            <table class=\"entry_name_table\">
+                            <tr>
+                                <td width=\"1\"><span class=\"fa fa-folder\"></span></td>
+                                <td class=\"entry_name\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:go_dir_list('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></td>
+                                <td align=\"right\">".utf8_convert($dir_entry["linkt"])."</td>
+                            </tr>
+                            </table>
+                        </td>";
                     $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -2686,18 +2844,25 @@ function dir_list_form() {
                         <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:delete_entry('".addslashes($file)."')\">".et('Rem')."</a></td>";
                     else $dir_out[$dir_count][] = "<td class=\"sm\">&nbsp;</td>";
                     if ( is_writable($fm_current_dir.$file) ) $dir_out[$dir_count][] = "
-                        <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:rename_entry('".addslashes($file)."')\">".et('Ren')."</a></td>";
+                        <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:rename_entry('".addslashes($file)."')\">".et('Ren')."</a></td>";
                     else $dir_out[$dir_count][] = "<td class=\"sm\">&nbsp;</td>";
                     if ( count($dir_out[$dir_count]) > $max_cells ){
                         $max_cells = count($dir_out[$dir_count]);
                     }
                     $dir_count++;
-                } else {
+                } elseif ($dir_entry["type"] == "file") {
                     $file_out[$file_count] = array();
                     $file_out[$file_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
-                        <td class=\"sm\"><nobr><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span>
-                        <a class=\"entry_name\" onmousedown=\"if(event)event.stopPropagation();\" href=\"javaScript:download_entry('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></nobr></td>";
+                        <td class=\"sm\">
+                            <table class=\"entry_name_table\">
+                            <tr>
+                                <td width=\"1\"><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span></td>
+                                <td class=\"entry_name\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:download_entry('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></td>
+                                <td align=\"right\">".utf8_convert($dir_entry["linkt"])."</td>
+                            </tr>
+                            </table>
+                        </td>";
                     $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["p"]."</td>";
                     if (!$is_windows) {
                         $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["u"]."</nobr></td>";
@@ -2726,6 +2891,36 @@ function dir_list_form() {
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:execute_entry('".addslashes($file)."')\">".et('Exec')."</a></td>";
                     else $file_out[$file_count][] = "<td class=\"sm\">&nbsp;</td>";
                     //$file_out[$file_count][] = "<td class=\"sm\">".(is_readable_phpfm($fm_current_dir.$file)?'<font color=green>R</font>':'<font color=red>R</font>').(is_writable_phpfm($fm_current_dir.$file)?'<font color=green>W</font>':'<font color=red>W</font>').(is_executable_phpfm($fm_current_dir.$file)?'<font color=green>X</font>':'<font color=red>X</font>')."</td>";
+                    if (count($file_out[$file_count])>$max_cells){
+                        $max_cells = count($file_out[$file_count]);
+                    }
+                    $file_count++;
+                } elseif ($dir_entry["type"] == "broken_link") {
+                    $file_out[$file_count] = array();
+                    $file_out[$file_count][] = "
+                        <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
+                        <td class=\"sm\">
+                            <table class=\"entry_name_table\">
+                            <tr>
+                                <td width=\"1\"><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span></td>
+                                <td class=\"entry_name\"><font color=\"red\"><b>".utf8_convert($dir_entry["namet"])."</b></font></td>
+                                <td align=\"right\"><font color=\"red\"><b>".utf8_convert($dir_entry["linkt"])."</b></font></td>
+                            </tr>
+                            </table>
+                        </td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["p"]."</td>";
+                    if (!$is_windows) {
+                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["u"]."</nobr></td>";
+                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["g"]."</nobr></td>";
+                    }
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["sizet"]."</nobr></td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["datet"]."</nobr></td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["extt"]."</td>";
+                    // File Actions
+                    $file_out[$file_count][] = "
+                                <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:delete_entry('".addslashes($file)."')\">".et('Rem')."</a></td>";
+                    $file_out[$file_count][] = "
+                                <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:rename_entry('".addslashes($file)."')\">".et('Ren')."</a></td>";
                     if (count($file_out[$file_count])>$max_cells){
                         $max_cells = count($file_out[$file_count]);
                     }
@@ -2773,8 +2968,9 @@ function dir_list_form() {
                     <button type=\"button\" class=\"btn\" onclick=\"sel_dir(6)\"><i class=\"fa fa-file-go\"></i> " . et('Move') . "</button>
                     <button type=\"button\" class=\"btn\" onclick=\"test_prompt(71)\"><i class=\"fa fa-file-archive-o\"></i> " . et('Compress') . "</button>
                     <button type=\"button\" class=\"btn\" onclick=\"test(73)\"><i class=\"fa fa-download\"></i> ZIP " . et('Download') . "</button>
-                    <button type=\"button\" class=\"btn\" onclick=\"resolve_ids()\" value=\"" . et('ResolveIDs') . "\"><i class=\"fa fa\"></i> " . et('ResolveIDs') . "</button>
-                    <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-file-config\"></i> " . et('Perms') . "</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"test_prompt(121)\" value=\"" . et('Symlink') . "\"> <i class=\"fa fa-link\"></i> ".et('Symlink')."</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"test_prompt(122)\" value=\"" . et('HardLink') . "\"> <i class=\"fa fa-link\"></i> ".et('HardLink')."</button>
+                    <button type=\"button\" class=\"btn\" onclick=\"chmod_form()\" value=\"" . et('Perms') . "\"><i class=\"fa fa-perms\"></i> " . et('Perms') . "</button>
                 </nobr></td>
                 </tr>";
             $out .= "
@@ -4706,6 +4902,7 @@ function frame3(){
     if ($action){
         switch ($action){
             case 1: // create dir
+            $cmd_arg = fix_filename($cmd_arg);
             if (strlen($cmd_arg)){
                 $cmd_arg = $fm_current_dir.$cmd_arg;
                 if (!file_exists($cmd_arg)){
@@ -4716,6 +4913,7 @@ function frame3(){
             }
             break;
             case 2: // create arq
+            $cmd_arg = fix_filename($cmd_arg);
             if (strlen($cmd_arg)){
                 $cmd_arg = $fm_current_dir.$cmd_arg;
                 if (!file_exists($cmd_arg)){
@@ -4727,7 +4925,7 @@ function frame3(){
             case 3: // rename arq ou dir
             if ((strlen($old_name))&&(strlen($new_name))){
                 rename($fm_current_dir.$old_name,$fm_current_dir.$new_name);
-                if (is_dir($fm_current_dir.$new_name)) reloadframe("parent",2);
+                if (is_dir($fm_current_dir.$new_name) || is_link($fm_current_dir.$new_name)) reloadframe("parent",2);
             }
             break;
             case 4: // delete sel
@@ -4737,7 +4935,7 @@ function frame3(){
                     if (count($selected_file_list)) {
                         for($x=0;$x<count($selected_file_list);$x++) {
                             $selected_file_list[$x] = trim($selected_file_list[$x]);
-                            if (strlen($selected_file_list[$x])) total_delete($fm_current_dir.$selected_file_list[$x],$dir_dest.$selected_file_list[$x]);
+                            if (strlen($selected_file_list[$x])) total_delete($fm_current_dir.$selected_file_list[$x]);
                         }
                     }
                 }
@@ -4746,7 +4944,7 @@ function frame3(){
                     if (count($selected_dir_list)) {
                         for($x=0;$x<count($selected_dir_list);$x++) {
                             $selected_dir_list[$x] = trim($selected_dir_list[$x]);
-                            if (strlen($selected_dir_list[$x])) total_delete($fm_current_dir.$selected_dir_list[$x],$dir_dest.$selected_dir_list[$x]);
+                            if (strlen($selected_dir_list[$x])) total_delete($fm_current_dir.$selected_dir_list[$x]);
                         }
                         reloadframe("parent",2);
                     }
@@ -4863,10 +5061,10 @@ function frame3(){
                 }
             }
             break;
-            case 8: // delete arq/dir
+            case 8: // delete folder/file
             if (strlen($cmd_arg)){
-                if (file_exists($fm_current_dir.$cmd_arg)) total_delete($fm_current_dir.$cmd_arg);
-                if (is_dir($fm_current_dir.$cmd_arg)) reloadframe("parent",2);
+                total_delete($fm_current_dir.$cmd_arg);
+                reloadframe("parent",2);
             }
             break;
             case 9: // CHMOD
@@ -4892,6 +5090,48 @@ function frame3(){
                         }
                     }
                 }
+            }
+            break;
+            case 121: // Symlink
+            case 122: // Hardlink
+            $allow_links_to_links = true; // TODO: readlink() recursive
+            $cmd_arg = fix_filename($cmd_arg);
+            if (strlen($dir_dest)){
+                if (strlen($selected_file_list)){
+                    $selected_file_list = explode("<|*|>",$selected_file_list);
+                    if (count($selected_file_list)) {
+                        for($x=0;$x<count($selected_file_list);$x++) {
+                            $selected_file_list[$x] = trim($selected_file_list[$x]);
+                            if (strlen($selected_file_list[$x])) {
+                                $link_name = rtrim($dir_dest.$selected_file_list[$x],DIRECTORY_SEPARATOR);
+                                if (count($selected_file_list) == 1 && strlen($cmd_arg)) {
+                                    $link_name = rtrim($dir_dest.$cmd_arg,DIRECTORY_SEPARATOR);
+                                }
+                                if ($action == '121') @symlink($fm_current_dir.$selected_file_list[$x], $link_name);
+                                else @link($fm_current_dir.$selected_file_list[$x], $link_name);
+                            }
+                        }
+                    }
+                }
+                if (strlen($selected_dir_list)){
+                    $selected_dir_list = explode("<|*|>",$selected_dir_list);
+                    if (count($selected_dir_list)) {
+                        for($x=0;$x<count($selected_dir_list);$x++) {
+                            $selected_dir_list[$x] = trim($selected_dir_list[$x]);
+                            if (strlen($selected_dir_list[$x])) {
+                                $link_name = rtrim($dir_dest.$selected_dir_list[$x],DIRECTORY_SEPARATOR);
+                                if (count($selected_dir_list) == 1 && strlen($cmd_arg)) {
+                                    $link_name = rtrim($dir_dest.$cmd_arg,DIRECTORY_SEPARATOR);
+                                }
+                                if ($action == '121') @symlink($fm_current_dir.$selected_dir_list[$x], $link_name);
+                                else @link($fm_current_dir.$selected_dir_list[$x], $link_name);
+                            }
+
+                        }
+                        reloadframe("parent",2);
+                    }
+                }
+                $fm_current_dir = $dir_dest;
             }
             break;
         }
@@ -5701,6 +5941,8 @@ function et($tag){
     $et['en']['ServerInfo'] = 'Server Info';
     $et['en']['CreateDir'] = 'Create Directory';
     $et['en']['CreateArq'] = 'Create File';
+    $et['en']['Symlink'] = 'Symlink';
+    $et['en']['HardLink'] = 'Hardlink';
     $et['en']['ExecCmd'] = 'Execute Command';
     $et['en']['Upload'] = 'Upload';
     $et['en']['UploadEnd'] = 'Upload Finished';
