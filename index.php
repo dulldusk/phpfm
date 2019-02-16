@@ -2824,16 +2824,22 @@ function dir_list_form() {
         <input type=hidden name=\"dir_before\" value=\"$dir_before\">
         <input type=hidden name=\"selected_dir_list\" value=\"\">
         <input type=hidden name=\"selected_file_list\" value=\"\">";
-    $uplink = "";
-    if ($fm_current_dir != $fm_current_root){
-        $mat = explode(DIRECTORY_SEPARATOR,$fm_current_dir);
-        $dir_before = "";
-        for($x=0;$x<(count($mat)-2);$x++) $dir_before .= $mat[$x].DIRECTORY_SEPARATOR;
-        if (strlen($dir_before)) $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=$dir_before\">🡹</a>&nbsp;&nbsp;";
-    }
-    $breadcrumbs = array();
-    foreach (explode(DIRECTORY_SEPARATOR, rtrim($fm_current_dir,DIRECTORY_SEPARATOR)) as $r) {
-        $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr(rtrim($fm_current_dir,DIRECTORY_SEPARATOR), $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
+    function get_breadcrumbs($path){
+        $entry_list = explode(DIRECTORY_SEPARATOR, rtrim($path,DIRECTORY_SEPARATOR));
+        $uplink = '';
+        if (count($entry_list) == 1){
+            $breadcrumbs = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.rawurlencode($path).'">'.$path.'</a>';;
+        } else {
+            $breadcrumbs = array();
+            for($x=0;$x<count($entry_list);$x++){
+                $entry_path = strstr(rtrim($path,DIRECTORY_SEPARATOR), $entry_list[$x], true).$entry_list[$x].DIRECTORY_SEPARATOR;
+                $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.rawurlencode($entry_path).'">'.$entry_list[$x].'</a>';
+                if ($x<count($entry_list)-1) $uplink .= $entry_list[$x].DIRECTORY_SEPARATOR;
+            }
+            $breadcrumbs = implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs);
+        }
+        if (strlen($uplink)) $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($uplink)."\">🡹</a>&nbsp;&nbsp;";
+        return $uplink.$breadcrumbs;
     }
     function get_link_breadcrumbs($path){
         $out = '';
@@ -2855,8 +2861,8 @@ function dir_list_form() {
         return $out;
     }
     $out .= "
-    <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding:8px;\" colspan=50><nobr>".$uplink;
-    $out .= implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs);
+    <tr bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding:8px;\" colspan=50><nobr>";;
+    $out .= get_breadcrumbs($fm_current_dir);
     $out .= get_link_breadcrumbs($fm_current_dir);
     $out .= "</nobr></td></tr>";
     if (!$io_error) {
