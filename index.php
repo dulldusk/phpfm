@@ -7,7 +7,7 @@
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-02-14
+ | Last Changed: 2019-02-16
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -679,7 +679,67 @@ if ($auth_pass == md5('') || $loggedon==$auth_pass){
 // +--------------------------------------------------
 // | File System
 // +--------------------------------------------------
+function symlink_phpfm($target,$link){
+    global $is_windows;
+    $ok = false;
+    if (!$is_windows){ // symlink() function not available on windows
+        if (function_exists('symlink')) {
+            $ok = symlink($target,$link);
+        } else {
+            $GLOBALS['dir_list_warn_message'] .= 'symlink() function is disabled<br>';
+        }
+    }
+    if (!$ok){
+        $cmd = '';
+        if ($is_windows){
+            if (is_dir($target)) $cmd = 'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
+            else $cmd = 'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
+        } else {
+            $cmd = 'ln -s '.escapeshellarg($target).' '.escapeshellarg($link);
+        }
+        $output = '';
+        $ok = system_exec_cmd($cmd,$output);
+        // if everything failed, try to create a hardlink to the file instead
+        if (!$ok && !is_dir($target)) {
+            $ok = link_phpfm($target,$link);
+        } elseif (!$ok) {
+            $GLOBALS['dir_list_warn_message'] .= $cmd.'<br>';
+            $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
+        }
+    }
+    return $ok;
+}
+function link_phpfm($target,$link){
+    global $is_windows;
+    if (is_dir($target)) {
+        // hardlinks to directories are not allowed, create symlink instead
+        // https://askubuntu.com/questions/210741/why-are-hard-links-not-allowed-for-directories
+        return symlink_phpfm($target,$link);
+    }
+    $ok = false;
+    if (function_exists('link')) { // link() function is available on windows (Vista, Server 2008 or greater)
+        $ok = link($target,$link);
+    } else {
+        $GLOBALS['dir_list_warn_message'] .= 'link() function is disabled<br>';
+    }
+    if (!$ok){
+        $cmd = '';
+        if ($is_windows){
+           $cmd = 'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
+        } else {
+           $cmd = 'ln '.escapeshellarg($target).' '.escapeshellarg($link);
+        }
+        $output = '';
+        $ok = system_exec_cmd($cmd,$output);
+        if (!$ok) {
+            $GLOBALS['dir_list_warn_message'] .= $cmd.'<br>';
+            $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
+        }
+    }
+    return $ok;
+}
 function phpfm_get_total_size($path){
+    $total_size = false;
     $dir_cookiename = fix_cookie_name($path);
     if (strlen($_COOKIE[$dir_cookiename])) {
         $total_size = $_COOKIE[$dir_cookiename];
@@ -691,9 +751,8 @@ function phpfm_get_total_size($path){
     $total_size = system_get_total_size($path);
     if ($total_size !== false) {
         setcookie((string)$dir_cookiename, (string)$total_size, 0 , "/");
-        return $total_size;
     }
-    return 0;
+    return $total_size;
 }
 function dir_list_update_total_size(){
     global $fm_current_dir, $dirname;
@@ -799,8 +858,8 @@ function total_copy($orig,$dest,$copylinks=true,$followlinks=false) {
     $ok = true;
     if (file_exists($orig) || is_link($orig)) {
         if ($copylinks == true && is_link($orig)){
-            $ok = link(readlink($orig), $dest);
-            if (!$ok) $ok = link($orig, $dest); // Allow copy of broken links, but rather copy the link to the target, as the link was.
+            $ok = link_phpfm(readlink($orig), $dest);
+            if (!$ok) $ok = link_phpfm($orig, $dest); // Allow copy of broken links, but rather copy the link to the target, as the link was.
         } elseif (is_dir($orig)) {
             $ok = mkdir(fs_encode($dest),0755);
             if ($ok) {
@@ -808,7 +867,7 @@ function total_copy($orig,$dest,$copylinks=true,$followlinks=false) {
                 foreach ($entry_list as $entry) {
                     if ($entry == "." || $entry == "..") continue;
                     if ($followlinks == false && is_link(rtrim($orig,DIRECTORY_SEPARATOR))){
-                        link(readlink($orig.DIRECTORY_SEPARATOR.$entry), $dest.DIRECTORY_SEPARATOR.$entry);
+                        $ok = link_phpfm(readlink($orig.DIRECTORY_SEPARATOR.$entry), $dest.DIRECTORY_SEPARATOR.$entry);
                     } else {
                         $ok = total_copy($orig.DIRECTORY_SEPARATOR.$entry, $dest.DIRECTORY_SEPARATOR.$entry, $copylinks, $followlinks);
                     }
@@ -1238,7 +1297,7 @@ function check_limit($new_filesize=0) {
     global $fm_current_root;
     global $quota_mb;
     if($quota_mb){
-        $total = invtval(phpfm_get_total_size($fm_current_root));
+        $total = intval(phpfm_get_total_size($fm_current_root));
         if (floor(($total+$new_filesize)/(1024*1024)) > $quota_mb) return true;
     }
     return false;
@@ -2144,10 +2203,11 @@ function dir_list_form() {
                     $entry_list[$entry_count]["type"] = "dir";
                     $dirsize = phpfm_get_total_size($fm_current_dir.$entry);
                     $entry_list[$entry_count]["size"] = intval($dirsize);
-                    $sizet = et('GetSize').'..';
-                    if ($dirsize === 'error'){ // (0 == 'error') is true! argh... i forgot this php magic.
+                    if ($dirsize === false) {
+                        $sizet = et('GetSize').'..';
+                    } elseif ($dirsize === 'error'){
                         $sizet = '<span title="error: too much recursion">'.et('Error').' &#x21bb</span>';
-                    } elseif ($entry_list[$entry_count]["size"]) {
+                    } else {
                         $sizet = format_size($entry_list[$entry_count]["size"]).' &#x21bb';
                     }
                     $entry_list[$entry_count]["sizet"] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
@@ -2191,10 +2251,11 @@ function dir_list_form() {
                 $entry_list[$entry_count]["type"] = "dir";
                 $dirsize = phpfm_get_total_size($fm_current_dir.$entry);
                 $entry_list[$entry_count]["size"] = intval($dirsize);
-                $sizet = et('GetSize').'..';
-                if ($dirsize === 'error'){ // (0 == 'error') is true! argh... i forgot this php magic.
+                if ($dirsize === false){
+                    $sizet = et('GetSize').'..';
+                } elseif ($dirsize === 'error') {
                     $sizet = '<span title="error: too much recursion">'.et('Error').' &#x21bb</span>';
-                } elseif ($entry_list[$entry_count]["size"]) {
+                } else {
                     $sizet = format_size($entry_list[$entry_count]["size"]).' &#x21bb';
                 }
                 $entry_list[$entry_count]["sizet"] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
@@ -2420,7 +2481,7 @@ function dir_list_form() {
             var ext = new Array(' bytes',' Kb',' Mb',' Gb',' Tb');
             while (arg >= Math.pow(1024,j)) ++j;
             resul = (Math.round(arg/Math.pow(1024,j-1)*100)/100) + ext[j-1];
-        } else resul = 0;
+        } else resul = '0 bytes';
         return resul;
     }
     function update_footer_status(){
@@ -2581,13 +2642,15 @@ function dir_list_form() {
         }
     }
     function set_dir_list_warn(arg){
-        try {
-            if (arg === false) document.getElementById(\"dir_list_warn\").style.display='none';
-            else {
-                document.getElementById(\"dir_list_warn\").innerHTML=arg;
-                document.getElementById(\"dir_list_warn\").style.display='';
+        var el = document.getElementById(\"dir_list_warn\");
+        if (el) {
+            if (arg != '' && arg != false){
+                el.innerHTML = arg;
+                el.style.display = '';
+            } else {
+                el.style.display = 'none';
             }
-        } catch (err) {}
+        }
     }
     function cancel_copy_move(){
         document.form_action.action.value = 0;
@@ -2709,7 +2772,6 @@ function dir_list_form() {
             else document.form_action.target='frame1';
         }
         if (erro!=''){
-            document.form_action.cmd_arg.focus();
             set_dir_list_warn(erro);
         } else if(conf!='') {
             if(confirm(conf)) {
@@ -3012,6 +3074,7 @@ function dir_list_form() {
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
         update_footer_status();
+        set_dir_list_warn('".addslashes($GLOBALS['dir_list_warn_message'])."');
     //-->
     </script>";
     echo $out;
@@ -4899,6 +4962,7 @@ function frame3(){
         <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery-1.11.1.min.js\"></script>
     ");
     echo "<body>\n";
+    $GLOBALS['dir_list_warn_message'] = '';
     if ($action){
         switch ($action){
             case 1: // create dir
@@ -5107,8 +5171,8 @@ function frame3(){
                                 if (count($selected_file_list) == 1 && strlen($cmd_arg)) {
                                     $link_name = rtrim($dir_dest.$cmd_arg,DIRECTORY_SEPARATOR);
                                 }
-                                if ($action == '121') @symlink($fm_current_dir.$selected_file_list[$x], $link_name);
-                                else @link($fm_current_dir.$selected_file_list[$x], $link_name);
+                                if ($action == '121') symlink_phpfm($fm_current_dir.$selected_file_list[$x], $link_name);
+                                else link_phpfm($fm_current_dir.$selected_file_list[$x], $link_name);
                             }
                         }
                     }
@@ -5123,8 +5187,8 @@ function frame3(){
                                 if (count($selected_dir_list) == 1 && strlen($cmd_arg)) {
                                     $link_name = rtrim($dir_dest.$cmd_arg,DIRECTORY_SEPARATOR);
                                 }
-                                if ($action == '121') @symlink($fm_current_dir.$selected_dir_list[$x], $link_name);
-                                else @link($fm_current_dir.$selected_dir_list[$x], $link_name);
+                                if ($action == '121') symlink_phpfm($fm_current_dir.$selected_dir_list[$x], $link_name);
+                                else link_phpfm($fm_current_dir.$selected_dir_list[$x], $link_name);
                             }
 
                         }
@@ -5535,7 +5599,7 @@ class tar_file extends archive {
                     $this->error[] = "{$file['name']} already exists.";
                     continue;
                 } else if ($file['type'] == 2) {
-                    symlink($temp['symlink'], $file['name']);
+                    symlink_phpfm($temp['symlink'], $file['name']);
                     chmod($file['name'], $file['stat'][2]);
                 } else if ($new = @fopen($file['name'], "wb")) {
                     fwrite($new, fread($fp, $file['stat'][7]));
