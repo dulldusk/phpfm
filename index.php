@@ -699,12 +699,18 @@ function symlink_phpfm($target,$link){
         }
         $output = '';
         $ok = system_exec_cmd($cmd,$output);
-        // if everything failed, try to create a hardlink to the file instead
-        if (!$ok && !is_dir($target)) {
-            $ok = link_phpfm($target,$link);
-        } elseif (!$ok) {
+        if (!$ok) {
             $GLOBALS['dir_list_warn_message'] .= $cmd.'<br>';
             $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
+        }
+        // link() function is available on windows (Vista, Server 2008 or greater)
+        // if everything failed, try to create a hardlink to the file instead
+        if (!$ok && !is_dir($target) && $is_windows) {
+            if (function_exists('link')) {
+                $ok = link($target,$link);
+            } else {
+                $GLOBALS['dir_list_warn_message'] .= 'link() function is disabled<br>';
+            }
         }
     }
     return $ok;
@@ -4542,7 +4548,7 @@ function system_exec_cmd($cmd, &$output){
             } elseif (function_exists('popen')) {
                 $exec_ok = cmd_popen_exec($cmd, $output);
             } else {
-                $output = "Error: PHP exec functions disabled..";
+                $output = "PHP exec functions disabled..";
             }
         }
     }
