@@ -686,7 +686,7 @@ function symlink_phpfm($target,$link){
         if (function_exists('symlink')) {
             $ok = symlink($target,$link);
         } else {
-            $GLOBALS['dir_list_warn_message'] .= 'symlink() function is disabled<br>';
+            $GLOBALS['dir_list_warn_message'] .= 'php symlink() function is disabled<br>';
         }
     }
     if (!$ok){
@@ -700,7 +700,7 @@ function symlink_phpfm($target,$link){
         $output = '';
         $ok = system_exec_cmd($cmd,$output);
         if (!$ok) {
-            $GLOBALS['dir_list_warn_message'] .= $cmd.'<br>';
+            $GLOBALS['dir_list_warn_message'] .= 'CMD: '.$cmd.'<br>';
             $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
         }
         // link() function is available on windows (Vista, Server 2008 or greater)
@@ -709,7 +709,7 @@ function symlink_phpfm($target,$link){
             if (function_exists('link')) {
                 $ok = link($target,$link);
             } else {
-                $GLOBALS['dir_list_warn_message'] .= 'link() function is disabled<br>';
+                $GLOBALS['dir_list_warn_message'] .= 'php link() function is disabled<br>';
             }
         }
     }
@@ -726,7 +726,7 @@ function link_phpfm($target,$link){
     if (function_exists('link')) { // link() function is available on windows (Vista, Server 2008 or greater)
         $ok = link($target,$link);
     } else {
-        $GLOBALS['dir_list_warn_message'] .= 'link() function is disabled<br>';
+        $GLOBALS['dir_list_warn_message'] .= 'php link() function is disabled<br>';
     }
     if (!$ok){
         $cmd = '';
@@ -738,7 +738,7 @@ function link_phpfm($target,$link){
         $output = '';
         $ok = system_exec_cmd($cmd,$output);
         if (!$ok) {
-            $GLOBALS['dir_list_warn_message'] .= $cmd.'<br>';
+            $GLOBALS['dir_list_warn_message'] .= 'CMD: '.$cmd.'<br>';
             $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
         }
     }
