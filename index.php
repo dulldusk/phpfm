@@ -1,4 +1,5 @@
 <?php
+//{"lang":"","fm_root":"","timezone":"","date_format":"Y\/m\/d H:i","auth_pass":"d41d8cd98f00b204e9800998ecf8427e","error_reporting":"2"}
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
@@ -692,8 +693,9 @@ function symlink_phpfm($target,$link){
     if (!$ok){
         $cmd = '';
         if ($is_windows){
-            if (is_dir($target)) $cmd = 'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
-            else $cmd = 'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
+            //$runas = 'runas /noprofile /user:Administrator ';
+            if (is_dir($target)) $cmd = $runas.'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
+            else $cmd = $runas.'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
         } else {
             $cmd = 'ln -s '.escapeshellarg($target).' '.escapeshellarg($link);
         }
@@ -731,9 +733,10 @@ function link_phpfm($target,$link){
     if (!$ok){
         $cmd = '';
         if ($is_windows){
-           $cmd = 'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
+            //$runas = 'runas /noprofile /user:Administrator ';
+            $cmd = $runas.'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
         } else {
-           $cmd = 'ln '.escapeshellarg($target).' '.escapeshellarg($link);
+            $cmd = 'ln '.escapeshellarg($target).' '.escapeshellarg($link);
         }
         $output = '';
         $ok = system_exec_cmd($cmd,$output);
@@ -2739,17 +2742,17 @@ function dir_list_form() {
             if (!is_anything_selected()) erro = '".et('NoSel')."...';
             else if(document.form_action.dir_dest.value.length == 0) erro = '".et('NoDestDir').".';
             else if(!valid_dest(document.form_action.dir_dest.value,document.form_action.fm_current_dir.value)) erro = '".et('InvalidDest').".';
-            var total_itens_selected = 0;
+            var total_selected = 0;
             var entry_name = '';
             conf = '';
             for(var x=0;x<".(integer)count($entry_list).";x++){
                 if(entry_list['entry'+x].selected){
-                    total_itens_selected++;
+                    total_selected++;
                     if (entry_name == '') entry_name = entry_list['entry'+x].name;
                     conf += document.form_action.dir_dest.value+entry_list['entry'+x].name+' 🡺 ".addslashes($fm_current_dir)."'+entry_list['entry'+x].name+'\\n';
                 }
             }
-            if (total_itens_selected == 1) {
+            if (total_selected == 1) {
                 var link_name = prompt('Enter the Symlink name.',entry_name);
                 if (link_name === null) {
                     cancel_copy_move();
@@ -6046,13 +6049,13 @@ function et($tag){
     $et['en']['Destination'] = 'Destination';
     $et['en']['Configurations'] = 'Configurations';
     $et['en']['JSError'] = 'JavaScript Error';
-    $et['en']['NoSel'] = 'There are no selected itens';
+    $et['en']['NoSel'] = 'There are no selected items';
     $et['en']['SelDir'] = 'Select the destination directory on the left tree';
     $et['en']['TypeDir'] = 'Enter the directory name';
     $et['en']['TypeArq'] = 'Enter the file name';
     $et['en']['TypeCmd'] = 'Enter the command';
     $et['en']['TypeArqComp'] = 'Enter the file name.\\nThe extension will define the compression type.\\nEx:\\nnome.zip\\nnome.tar\\nnome.bzip\\nnome.gzip';
-    $et['en']['RemSel'] = 'DELETE selected itens';
+    $et['en']['RemSel'] = 'DELETE selected items';
     $et['en']['NoDestDir'] = 'There is no selected destination directory';
     $et['en']['DestEqOrig'] = 'Origin and destination directories are equal';
     $et['en']['InvalidDest'] = 'Destination directory is invalid';
