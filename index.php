@@ -1945,8 +1945,8 @@ function frame2(){
             }
         }
         if (count($fm_root_opts)>1) echo "<select name=drive onchange=\"set_fm_current_root(this.value)\" style=\"float:left; margin:1px 0 5px 0; margin-right:5px; padding:5px;\">".implode("\n",$fm_root_opts)."</select>";
-        echo "<button style=\"margin-bottom: 5px;\" class=\"btn\" onclick=\"refresh_tree()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button>";
-        if ($auth_pass != md5('')) echo "&nbsp;<button style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
+        echo "<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn\" onclick=\"refresh_tree()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button>";
+        if ($auth_pass != md5('')) echo "&nbsp;<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
     echo "</form>";
     echo "</td></tr>";
     echo "<tr valign=top><td>";
@@ -3676,9 +3676,9 @@ function edit_file_form(){
     </form>
     <table border=0 cellspacing=0 cellpadding=5 align=center>
         <tr>
-            <td width=\"33%\"><button class=\"btn\" onclick=\"go_refresh()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button></td>
+            <td width=\"33%\"><button type=\"button\" class=\"btn\" onclick=\"go_refresh()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button></td>
             <td align=center><b>".$save_msg."</b></td>
-            <td width=\"33%\" align=right><button class=\"btn\" onclick=\"go_save()\" value=\"".et('SaveFile')."\"><i class=\"fa fa-add-file\"></i> ".et('SaveFile')."</button></td>
+            <td width=\"33%\" align=right><button type=\"button\" class=\"btn\" onclick=\"go_save()\" value=\"".et('SaveFile')."\"><i class=\"fa fa-add-file\"></i> ".et('SaveFile')."</button></td>
         </tr>
     </table>
     <script language=\"Javascript\" type=\"text/javascript\">
