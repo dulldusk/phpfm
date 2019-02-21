@@ -2192,7 +2192,7 @@ function dir_list_form() {
             $entry_list[$entry_count]["sizet"] = 0;
             $entry_list[$entry_count]["type"] = "none";
             $entry_list[$entry_count]["date"] = date("Ymd", filemtime($fm_current_dir.$entry));
-            $entry_list[$entry_count]["time"] = date("his", filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]["time"] = date("His", filemtime($fm_current_dir.$entry));
             $entry_list[$entry_count]["datet"] = date($date_format, filemtime($fm_current_dir.$entry));
             $entry_list[$entry_count]["p"] = substr(sprintf('%o', fileperms($fm_current_dir.$entry)), -4);
             $entry_list[$entry_count]["u"] = fileowner($fm_current_dir.$entry);
