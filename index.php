@@ -2452,9 +2452,6 @@ function dir_list_form() {
     function select(Entry){
         if(Entry.selected) return false;
         Entry.selected = true;
-        total_size_selected += parseInt(Entry.size);
-        if(Entry.type == 'dir') total_dirs_selected++;
-        else total_files_selected++;
         last_entry_selected = Entry.name;
         document.form_action.chmod_arg.value = Entry.perms;
         update_footer_selection_total_status();
@@ -2463,9 +2460,6 @@ function dir_list_form() {
     function unselect(Entry){
         if (!Entry.selected) return false;
         Entry.selected = false;
-        total_size_selected -= parseInt(Entry.size);
-        if (Entry.type == 'dir') total_dirs_selected--;
-        else total_files_selected--;
         update_footer_selection_total_status();
         return true;
     }
@@ -2527,6 +2521,19 @@ function dir_list_form() {
         }
     }
     function update_footer_selection_total_status(){
+        total_size_selected = 0;
+        total_dirs_selected = 0;
+        total_files_selected = 0;
+        for(var x=0;x<".(integer)count($entry_list).";x++){
+            if(entry_list['entry'+x].selected){
+                if(entry_list['entry'+x].type == 'dir'){
+                    total_dirs_selected++;
+                } else {
+                    total_files_selected++;
+                }
+                total_size_selected += parseInt(entry_list['entry'+x].size);
+            }
+        }
         var selection_total_size_status = '';
         if (total_dirs_selected) {
             selection_total_size_status += total_dirs_selected+' ".et('Dir_s')."';
@@ -3057,7 +3064,7 @@ function dir_list_form() {
         }
     } else {
         $out .= "
-        <tr><td colspan=50 style=\"padding:8px;\"><font color=red>".et('IOError').".<br>".$fm_current_dir."</font></tr>";
+        <tr><td colspan=50 style=\"padding:8px;\"><font color=red>".et('IOError').".<br>".rtrim($fm_current_dir,DIRECTORY_SEPARATOR)."</font></tr>";
     }
     $out .= "
         <tr style=\"border-top: 2px solid #eaeaea;\">
@@ -3765,35 +3772,84 @@ function config_form(){
         //-->
         </script>";
     } else {
-        $timezone_opts = array();
-        $timezone_opts[] = 'Etc/UTC';
-        $timezone_opts[] = 'Etc/GMT-14';
-        $timezone_opts[] = 'Etc/GMT-13';
-        $timezone_opts[] = 'Etc/GMT-12';
-        $timezone_opts[] = 'Etc/GMT-11';
-        $timezone_opts[] = 'Etc/GMT-10';
-        $timezone_opts[] = 'Etc/GMT-9';
-        $timezone_opts[] = 'Etc/GMT-8';
-        $timezone_opts[] = 'Etc/GMT-7';
-        $timezone_opts[] = 'Etc/GMT-6';
-        $timezone_opts[] = 'Etc/GMT-5';
-        $timezone_opts[] = 'Etc/GMT-4';
-        $timezone_opts[] = 'Etc/GMT-3';
-        $timezone_opts[] = 'Etc/GMT-2';
-        $timezone_opts[] = 'Etc/GMT-1';
-        $timezone_opts[] = 'Etc/GMT';
-        $timezone_opts[] = 'Etc/GMT+1';
-        $timezone_opts[] = 'Etc/GMT+2';
-        $timezone_opts[] = 'Etc/GMT+3';
-        $timezone_opts[] = 'Etc/GMT+4';
-        $timezone_opts[] = 'Etc/GMT+5';
-        $timezone_opts[] = 'Etc/GMT+6';
-        $timezone_opts[] = 'Etc/GMT+7';
-        $timezone_opts[] = 'Etc/GMT+8';
-        $timezone_opts[] = 'Etc/GMT+9';
-        $timezone_opts[] = 'Etc/GMT+10';
-        $timezone_opts[] = 'Etc/GMT+11';
-        $timezone_opts[] = 'Etc/GMT+12';
+        $timezone_opts = json_decode('[
+            ["(GMT-12:00) Pacific\/Wake","Pacific\/Wake"],
+            ["(GMT-11:00) Pacific\/Apia","Pacific\/Apia"],
+            ["(GMT-10:00) Pacific\/Honolulu","Pacific\/Honolulu"],
+            ["(GMT-09:00) America\/Anchorage","America\/Anchorage"],
+            ["(GMT-08:00) America\/Los_Angeles","America\/Los_Angeles"],
+            ["(GMT-07:00) America\/Chihuahua","America\/Chihuahua"],
+            ["(GMT-07:00) America\/Denver","America\/Denver"],
+            ["(GMT-07:00) America\/Phoenix","America\/Phoenix"],
+            ["(GMT-06:00) America\/Chicago","America\/Chicago"],
+            ["(GMT-06:00) America\/Managua","America\/Managua"],
+            ["(GMT-06:00) America\/Mexico_City","America\/Mexico_City"],
+            ["(GMT-06:00) America\/Regina","America\/Regina"],
+            ["(GMT-05:00) America\/Bogota","America\/Bogota"],
+            ["(GMT-05:00) America\/Indiana\/Indianapolis","America\/Indiana\/Indianapolis"],
+            ["(GMT-05:00) America\/New_York","America\/New_York"],
+            ["(GMT-04:00) America\/Caracas","America\/Caracas"],
+            ["(GMT-04:00) America\/Halifax","America\/Halifax"],
+            ["(GMT-04:00) America\/Santiago","America\/Santiago"],
+            ["(GMT-03:30) America\/St_Johns","America\/St_Johns"],
+            ["(GMT-03:00) America\/Argentina\/Buenos_Aires","America\/Argentina\/Buenos_Aires"],
+            ["(GMT-03:00) America\/Godthab","America\/Godthab"],
+            ["(GMT-03:00) America\/Sao_Paulo","America\/Sao_Paulo"],
+            ["(GMT-02:00) America\/Noronha","America\/Noronha"],
+            ["(GMT-01:00) Atlantic\/Azores","Atlantic\/Azores"],
+            ["(GMT-01:00) Atlantic\/Cape_Verde","Atlantic\/Cape_Verde"],
+            ["(GMT 00:00) Africa\/Casablanca","\/Casablanca"],
+            ["(GMT 00:00) Europe\/London","\/London"],
+            ["(GMT+01:00) Africa\/Lagos","Africa\/Lagos"],
+            ["(GMT+01:00) Europe\/Belgrade","Europe\/Belgrade"],
+            ["(GMT+01:00) Europe\/Berlin","Europe\/Berlin"],
+            ["(GMT+01:00) Europe\/Paris","Europe\/Paris"],
+            ["(GMT+01:00) Europe\/Sarajevo","Europe\/Sarajevo"],
+            ["(GMT+02:00) Africa\/Cairo","Africa\/Cairo"],
+            ["(GMT+02:00) Africa\/Johannesburg","Africa\/Johannesburg"],
+            ["(GMT+02:00) Asia\/Jerusalem","Asia\/Jerusalem"],
+            ["(GMT+02:00) Europe\/Istanbul","Europe\/Istanbul"],
+            ["(GMT+02:00) Europe\/Bucharest","Europe\/Bucharest"],
+            ["(GMT+02:00) Europe\/Helsinki","Europe\/Helsinki"],
+            ["(GMT+03:00) Africa\/Nairobi","Africa\/Nairobi"],
+            ["(GMT+03:00) Asia\/Baghdad","Asia\/Baghdad"],
+            ["(GMT+03:00) Asia\/Riyadh","Asia\/Riyadh"],
+            ["(GMT+03:00) Europe\/Moscow","Europe\/Moscow"],
+            ["(GMT+03:30) Asia\/Tehran","Asia\/Tehran"],
+            ["(GMT+04:00) Asia\/Muscat","Asia\/Muscat"],
+            ["(GMT+04:00) Asia\/Tbilisi","Asia\/Tbilisi"],
+            ["(GMT+04:30) Asia\/Kabul","Asia\/Kabul"],
+            ["(GMT+05:00) Asia\/Karachi","Asia\/Karachi"],
+            ["(GMT+05:00) Asia\/Yekaterinburg","Asia\/Yekaterinburg"],
+            ["(GMT+05:30) Asia\/Calcutta","Asia\/Calcutta"],
+            ["(GMT+05:45) Asia\/Katmandu","Asia\/Katmandu"],
+            ["(GMT+06:00) Asia\/Dhaka","Asia\/Dhaka"],
+            ["(GMT+06:00) Asia\/Colombo","Asia\/Colombo"],
+            ["(GMT+06:00) Asia\/Novosibirsk","Asia\/Novosibirsk"],
+            ["(GMT+06:30) Asia\/Rangoon","Asia\/Rangoon"],
+            ["(GMT+07:00) Asia\/Bangkok","Asia\/Bangkok"],
+            ["(GMT+07:00) Asia\/Krasnoyarsk","Asia\/Krasnoyarsk"],
+            ["(GMT+08:00) Asia\/Hong_Kong","Asia\/Hong_Kong"],
+            ["(GMT+08:00) Asia\/Irkutsk","Asia\/Irkutsk"],
+            ["(GMT+08:00) Asia\/Singapore","Asia\/Singapore"],
+            ["(GMT+08:00) Asia\/Taipei","Asia\/Taipei"],
+            ["(GMT+08:00) Asia\/Irkutsk","Asia\/Irkutsk"],
+            ["(GMT+08:00) Australia\/Perth","Australia\/Perth"],
+            ["(GMT+09:00) Asia\/Tokyo","Asia\/Tokyo"],
+            ["(GMT+09:00) Asia\/Seoul","Asia\/Seoul"],
+            ["(GMT+09:00) Asia\/Yakutsk","Asia\/Yakutsk"],
+            ["(GMT+09:30) Australia\/Adelaide","Australia\/Adelaide"],
+            ["(GMT+09:30) Australia\/Darwin","Australia\/Darwin"],
+            ["(GMT+10:00) Australia\/Brisbane","Australia\/Brisbane"],
+            ["(GMT+10:00) Australia\/Hobart","Australia\/Hobart"],
+            ["(GMT+10:00) Australia\/Sydney","Australia\/Sydney"],
+            ["(GMT+10:00) Asia\/Vladivostok","Asia\/Vladivostok"],
+            ["(GMT+10:00) Pacific\/Guam","Pacific\/Guam"],
+            ["(GMT+11:00) Asia\/Magadan","Asia\/Magadan"],
+            ["(GMT+12:00) Pacific\/Auckland","Pacific\/Auckland"],
+            ["(GMT+12:00) Pacific\/Fiji","Pacific\/Fiji"],
+            ["(GMT+13:00) Pacific\/Tongatapu","Pacific\/Tongatapu"]
+        ]');
         echo "
         <table border=0 cellspacing=0 cellpadding=5 align=left style=\"padding:5px;\">
         <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" autocomplete=\"off\">
@@ -3808,7 +3864,7 @@ function config_form(){
                 <option value=''>System Default";
                 foreach ($timezone_opts as $opt) {
                     echo "
-                    <option value='".$opt."'>".$opt;
+                    <option value='".$opt[1]."'>".$opt[0];
                 }
             echo "
             </select>
