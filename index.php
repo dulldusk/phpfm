@@ -3660,7 +3660,7 @@ function view_form(){
 }
 function ace_mode_autodetect($file){
     $mode = 'plain_text';
-    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
     switch ($extension){
         case 'html':
         case 'htm':
