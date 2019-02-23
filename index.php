@@ -1369,6 +1369,20 @@ function mb_str_ireplace($co, $naCo, $wCzym) {
 // +--------------------------------------------------
 // | Interface
 // +--------------------------------------------------
+// Fix for the demo at https://phpfm-demo.000webhostapp.com
+function demo_fix(){
+    global $url_root;
+    if (strpos($url_root,'phpfm-demo.000webhostapp.com') !== false) {
+        echo "
+        <script language=\"Javascript\" type=\"text/javascript\">
+            if (window.jQuery){
+                setTimeout(function(){
+                    $('div:has(a:has(img[alt=\"www.000webhost.com\"]))').remove();
+                },1000);
+            }
+        </script>";
+    }
+}
 function html_header($header=""){
     global $charset,$fm_color,$fm_path_info,$cookie_cache_time;
     echo "
@@ -3227,6 +3241,7 @@ function upload_form(){
         $out .= "<tr><td colspan=2 align=left><nobr><b>".et('UploadEnd')."</b></nobr></td></tr>";
         echo "<table height=\"100%\" border=0 cellspacing=0 cellpadding=2 style=\"padding:5px;\">".$out."</table>";
     }
+    demo_fix();
     echo "</body>\n</html>";
 }
 function chmod_form(){
@@ -3673,7 +3688,9 @@ function view_form(){
             if (el) el.innerHTML = \"".html_encode($title)."\";
             document.location.href = '".$url."';
         //-->
-        </script>
+        </script>";
+        demo_fix();
+        echo "
         </body>\n</html>";
     }
 }
@@ -3926,7 +3943,9 @@ function edit_file_form(){
         editor.gotoLine(".($curr_row+1).",".($curr_col).");
         editor.focus();
     //-->
-    </script>
+    </script>";
+    demo_fix();
+    echo "
     </body>\n</html>";
 }
 function config_form(){
@@ -4127,6 +4146,7 @@ function config_form(){
             },250);
         //-->
         </script>";
+        demo_fix();
     }
     echo "
     </body>\n</html>";
@@ -4587,6 +4607,7 @@ function portscan_form(){
     //-->
     </script>
     ";
+    demo_fix();
     echo "</body>\n</html>";
 }
 // +--------------------------------------------------
@@ -4979,7 +5000,6 @@ function shell_form(){
             <body marginwidth="0" marginheight="0">
                 <style>
                     .terminal {
-
                     }
                 </style>
                 <script>
@@ -5061,8 +5081,9 @@ function shell_form(){
                         );
                     });
                 </script>
-            </body></html>
             <?php
+            demo_fix();
+            echo "</body>\n</html>";
         break;
     }
 }
@@ -5504,6 +5525,7 @@ function frame3(){
             about_form();
         </script>";
     }
+    demo_fix();
     echo "
     </body>\n</html>";
 }
