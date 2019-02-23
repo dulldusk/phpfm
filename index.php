@@ -119,7 +119,7 @@ if (@get_magic_quotes_gpc()) {
 $blockKeys = array('_SERVER','_SESSION','_GET','_POST','_COOKIE');
 foreach ($_GET as $key => $val) if (array_search($key,$blockKeys) === false) $$key=$val;
 foreach ($_POST as $key => $val) if (array_search($key,$blockKeys) === false) $$key=$val;
-foreach ($_COOKIE as $key => $val) if (array_search($key,$blockKeys) === false && $key != 'fm_current_dir') $$key=$val;
+foreach ($_COOKIE as $key => $val) if (array_search($key,$blockKeys) === false && $key != 'fm_current_dir' && $key != 'ace_wrap') $$key=$val;
 // PHP_VERSION_ID is available as of PHP 5.2.7, if our version is lower than that, then emulate it
 if (!defined('PHP_VERSION_ID')) {
     $php_version = explode('.', PHP_VERSION);
@@ -1370,7 +1370,7 @@ function mb_str_ireplace($co, $naCo, $wCzym) {
 // | Interface
 // +--------------------------------------------------
 function html_header($header=""){
-    global $charset,$fm_color,$fm_path_info;
+    global $charset,$fm_color,$fm_path_info,$cookie_cache_time;
     echo "
     <!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"//www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
     <html xmlns=\"//www.w3.org/1999/xhtml\">
@@ -1382,6 +1382,14 @@ function html_header($header=""){
         .fm-title { margin: 0; font-weight: 500; line-height: 1.2; font-size: 1.5rem; }
         .float-left { float: left }
         .float-right { float: right }
+        .noselect {
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none; /* Safari */
+            -khtml-user-select: none; /* Konqueror HTML */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version */
+        }
         .btn {
             display: inline-block;
             text-align: center;
@@ -1602,6 +1610,11 @@ function html_header($header=""){
             exp.setTime (exp.getTime() - 1);
             var cval = getCookie (name);
             document.cookie = name + '=' + cval + '; expires=' + exp.toGMTString();
+        }
+        function setCookiePersistent(name, value){
+            var exp = new Date();
+            exp.setTime(exp.getTime()+".$cookie_cache_time.");
+            setCookie(name,value,exp);
         }
         var frameWidth, frameHeight;
         function getFrameSize(){
@@ -2174,7 +2187,6 @@ function dir_list_form() {
             document.getElementById(\"modalIframe\").focus();
             document.body.style.overflow = 'hidden';
             window.scrollTo(0,0);
-
         }
         function closeModalWindow(){
             document.getElementById(\"modalIframe\").src = '';
@@ -3716,7 +3728,7 @@ function ace_mode_autodetect($file){
     return $mode;
 }
 function edit_file_form(){
-    global $fm_current_dir,$filename,$file_data,$save_file,$fm_path_info,$curr_row,$curr_col,$ace_mode,$cookie_cache_time;
+    global $fm_current_dir,$filename,$file_data,$save_file,$fm_path_info,$curr_row,$curr_col,$ace_mode,$ace_wrap,$cookie_cache_time;
     $file = $fm_current_dir.$filename;
     $ace_mode_opts = array();
     $ace_mode_opts[] = array('HTML','html');
@@ -3736,6 +3748,10 @@ function edit_file_form(){
     if (strlen($_COOKIE[$file_ace_mode_cookiename])) $ace_mode_curr = $_COOKIE[$file_ace_mode_cookiename];
     if (strlen($ace_mode)) $ace_mode_curr = $ace_mode;
     setcookie($file_ace_mode_cookiename, $ace_mode_curr, time()+$cookie_cache_time, "/");
+    $ace_wrap_curr = 0;
+    if (strlen($_COOKIE['ace_wrap'])) $ace_wrap_curr = intval($_COOKIE['ace_wrap']);
+    if (strlen($ace_wrap)) $ace_wrap_curr = intval($ace_wrap);
+    setcookie('ace_wrap', $ace_wrap_curr, time()+$cookie_cache_time, "/");
     $curr_row = intval($curr_row);
     $curr_col = intval($curr_col);
     $save_msg = '';
@@ -3772,6 +3788,7 @@ function edit_file_form(){
         <input type=hidden name=\"curr_row\" id=\"curr_row\" value=\"0\">
         <input type=hidden name=\"curr_col\" id=\"curr_col\" value=\"0\">
         <input type=hidden name=\"ace_mode\" id=\"ace_mode\" value=\"\">
+        <input type=hidden name=\"ace_wrap\" id=\"ace_wrap\" value=\"\">
         <input type=hidden name=\"save_file\" value=\"0\">
     </form>
     <style>
@@ -3792,9 +3809,26 @@ function edit_file_form(){
             float: left;
             margin-right: 6px;
         }
+        #div_toolbar .ace_wrap_select {
+            display: inline-block;
+            float: left;
+            border: 1px solid #aaa;
+            background-color: #ddd;
+            padding: 3px 6px 4px 3px;
+            margin-right: 6px;
+            margin-top: 1px;
+        }
+        #div_toolbar .ace_wrap_select input, #div_toolbar .ace_wrap_select label {
+            cursor: pointer;
+        }
         #div_toolbar .save_msg {
-            margin-top: 6px;
+            display: inline-block;
+            float: left;
             font-weight: bold;
+            border: 1px solid #aaa;
+            padding: 5px 6px;
+            margin-right: 6px;
+            margin-top: 1px;
         }
         #div_ace_editor {
             position: relative;
@@ -3814,7 +3848,10 @@ function edit_file_form(){
             }
         echo "
         </select>
-        <div class=\"save_msg\">".$save_msg."</div>
+        <div class=\"ace_wrap_select\"><input type=\"checkbox\" name=\"ace_wrap_select\" id=\"ace_wrap_select\" value=\"1\"".($ace_wrap_curr?' checked':'')." onclick=\"changeWrapMode()\"><label for=\"ace_wrap_select\" class=\"noselect\">&nbsp;Wrap</label></div>";
+        if (strlen($save_msg)) echo "
+        <div class=\"save_msg\">".$save_msg."</div>";
+    echo "
     </div>
     <div id=\"div_ace_editor\">".html_encode($file_data)."</div>
     <script language=\"Javascript\" type=\"text/javascript\">
@@ -3825,10 +3862,17 @@ function edit_file_form(){
         editor.setOptions({
             theme: 'ace/theme/monokai',
             mode: 'ace/mode/".$ace_mode_curr."',
-            useWorker: false,
-            //wrap: 200,
+            useWorker: false, // boolean: true if use web worker for loading scripts
+            useSoftTabs: true, // boolean: true if we want to use spaces than tabs
+            tabSize: 4,
+            wrap: ".($ace_wrap_curr?'true':'false').",
+            indentedSoftWrap: false,
+            fixedWidthGutter: true,
             showPrintMargin: false,
-            fontSize: '12px'
+            printMarginColumn: 80,
+            //scrollSpeed: 2,
+            fontFamily: 'Courier New',
+            fontSize: '10pt'
         });
         editor.commands.addCommand({
             name: 'refreshFile',
@@ -3849,12 +3893,17 @@ function edit_file_form(){
             if (mode.length > 0) mode = 'ace/mode/'+mode;
             editor.getSession().setMode(mode);
         }
+        function changeWrapMode(){
+            var mode = $('#ace_wrap_select').prop('checked');
+            editor.getSession().setOption('wrap', mode);
+        }
         function refreshFile(){
             document.edit_form.save_file.value=0;
             document.edit_form.file_data.value='';
             $('#curr_row').val(editor.getSelectionRange().start.row);
             $('#curr_col').val(editor.getSelectionRange().start.column);
             $('#ace_mode').val($('#ace_mode_select').val());
+            $('#ace_wrap').val($('#ace_wrap_select').prop('checked')?1:0);
             document.edit_form.submit();
         }
         function saveFile(){
@@ -3863,6 +3912,7 @@ function edit_file_form(){
             $('#curr_row').val(editor.getSelectionRange().start.row);
             $('#curr_col').val(editor.getSelectionRange().start.column);
             $('#ace_mode').val($('#ace_mode_select').val());
+            $('#ace_wrap').val($('#ace_wrap_select').prop('checked')?1:0);
         ";
         if (is_writable($file)) echo "
             document.edit_form.submit();";
@@ -5189,6 +5239,10 @@ function frame3(){
             exit();
         }
     }
+    $about_form_was_shown = intval($about_form_was_shown);
+    if (!$about_form_was_shown){
+        setcookie("about_form_was_shown", '1' , time()+$cookie_cache_time , "/");
+    }
     if (!isset($order_dir_list_by)){
         $order_dir_list_by = "1A";
         setcookie("order_dir_list_by", $order_dir_list_by , time()+$cookie_cache_time , "/");
@@ -5444,17 +5498,14 @@ function frame3(){
     } else {
         dir_list_form();
     }
-    if (!($about_form_was_shown)) echo "
+    if (!$about_form_was_shown) {
+        echo "
         <script language=\"Javascript\" type=\"text/javascript\">
-        <!--
             about_form();
-            var exp = new Date();
-            exp.setTime(exp.getTime()+".$cookie_cache_time.");
-            setCookie('about_form_was_shown','1',exp);
-        -->
-        </script>
-    ";
-    echo "</body>\n</html>";
+        </script>";
+    }
+    echo "
+    </body>\n</html>";
 }
 function frameset(){
     global $fm_path_info,$leftFrameWidth;
