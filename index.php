@@ -697,7 +697,7 @@ function symlink_phpfm($target,$link){
         if (function_exists('symlink')) {
             $ok = symlink($target,$link);
         } else {
-            $GLOBALS['dir_list_warn_message'] .= 'php symlink() function is disabled<br>';
+            $GLOBALS['dir_list_warn_message'] .= 'Error: php symlink() function is disabled.<br>';
         }
     }
     if (!$ok){
@@ -713,7 +713,7 @@ function symlink_phpfm($target,$link){
         $ok = system_exec_cmd($cmd,$output);
         if (!$ok) {
             $GLOBALS['dir_list_warn_message'] .= 'CMD: '.$cmd.'<br>';
-            $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
+            $GLOBALS['dir_list_warn_message'] .= $output.'<br>';
         }
         // link() function is available on windows (Vista, Server 2008 or greater)
         // if everything failed, try to create a hardlink to the file instead
@@ -721,7 +721,7 @@ function symlink_phpfm($target,$link){
             if (function_exists('link')) {
                 $ok = link($target,$link);
             } else {
-                $GLOBALS['dir_list_warn_message'] .= 'php link() function is disabled<br>';
+                $GLOBALS['dir_list_warn_message'] .= 'Error: php link() function is disabled.<br>';
             }
         }
     }
@@ -738,7 +738,7 @@ function link_phpfm($target,$link){
     if (function_exists('link')) { // link() function is available on windows (Vista, Server 2008 or greater)
         $ok = link($target,$link);
     } else {
-        $GLOBALS['dir_list_warn_message'] .= 'php link() function is disabled<br>';
+        $GLOBALS['dir_list_warn_message'] .= 'Error: php link() function is disabled.<br>';
     }
     if (!$ok){
         $cmd = '';
@@ -752,7 +752,7 @@ function link_phpfm($target,$link){
         $ok = system_exec_cmd($cmd,$output);
         if (!$ok) {
             $GLOBALS['dir_list_warn_message'] .= 'CMD: '.$cmd.'<br>';
-            $GLOBALS['dir_list_warn_message'] .= 'Error: '.$output.'<br>';
+            $GLOBALS['dir_list_warn_message'] .= $output.'<br>';
         }
     }
     return $ok;
@@ -4847,7 +4847,7 @@ function system_exec_cmd($cmd, &$output){
             } elseif (function_exists('popen')) {
                 $exec_ok = cmd_popen_exec($cmd, $output);
             } else {
-                $output = "PHP exec functions disabled..";
+                $output = "Error: PHP system exec functions are disabled.";
             }
         }
     }
