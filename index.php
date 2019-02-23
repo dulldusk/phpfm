@@ -2,12 +2,12 @@
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
- | phpFileManager 1.7.7
+ | phpFileManager 1.7.8
  | By Fabricio Seger Kolling
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-02-22
+ | Last Changed: 2019-02-23
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.7';
+$version = '1.7.8';
 $charset = 'UTF-8';
 $debug_mode = false;
 $max_php_recursion = 200;
@@ -4151,133 +4151,65 @@ function config_form(){
     echo "
     </body>\n</html>";
 }
-define('ENOTSOCK',      88);    /* Socket operation on non-socket */
-define('EDESTADDRREQ',  89);    /* Destination address required */
-define('EMSGSIZE',      90);    /* Message too long */
-define('EPROTOTYPE',    91);    /* Protocol wrong type for socket */
-define('ENOPROTOOPT',   92);    /* Protocol not available */
-define('EPROTONOSUPPORT', 93);  /* Protocol not supported */
-define('ESOCKTNOSUPPORT', 94);  /* Socket type not supported */
-define('EOPNOTSUPP',    95);    /* Operation not supported on transport endpoint */
-define('EPFNOSUPPORT',  96);    /* Protocol family not supported */
-define('EAFNOSUPPORT',  97);    /* Address family not supported by protocol */
-define('EADDRINUSE',    98);    /* Address already in use */
-define('EADDRNOTAVAIL', 99);    /* Cannot assign requested address */
-define('ENETDOWN',      100);   /* Network is down */
-define('ENETUNREACH',   101);   /* Network is unreachable */
-define('ENETRESET',     102);   /* Network dropped connection because of reset */
-define('ECONNABORTED',  103);   /* Software caused connection abort */
-define('ECONNRESET',    104);   /* Connection reset by peer */
-define('ENOBUFS',       105);   /* No buffer space available */
-define('EISCONN',       106);   /* Transport endpoint is already connected */
-define('ENOTCONN',      107);   /* Transport endpoint is not connected */
-define('ESHUTDOWN',     108);   /* Cannot send after transport endpoint shutdown */
-define('ETOOMANYREFS',  109);   /* Too many references: cannot splice */
-define('ETIMEDOUT',     110);   /* Connection timed out */
-define('ECONNREFUSED',  111);   /* Connection refused */
-define('EHOSTDOWN',     112);   /* Host is down */
-define('EHOSTUNREACH',  113);   /* No route to host */
-define('EALREADY',      114);   /* Operation already in progress */
-define('EINPROGRESS',   115);   /* Operation now in progress */
-define('EREMOTEIO',     121);   /* Remote I/O error */
-define('ECANCELED',     125);   /* Operation Canceled */
-function ping($host,$timeout=3) {
-    global $g_icmp_error;
-    $g_icmp_error = "No Error";
+function phpfm_host2ip($host_or_ip){
+    if (filter_var($host_or_ip, FILTER_VALIDATE_IP)) return $host_or_ip;
+    else return gethostbyname($host_or_ip);
+}
+function phpfm_ping($ip,&$output) {
     if (!function_exists("socket_create")) {
-        $g_icmp_error = "Function socket_create() not available";
-        return;
+        $output = "Function socket_create() not available";
+        return false;
     }
-    $port = 0;
-    $datasize = 64;
-    $ident = array(ord('J'), ord('C'));
-    $seq   = array(rand(0, 255), rand(0, 255));
-    $packet = '';
-    $packet .= chr(8); // type = 8 : request
-    $packet .= chr(0); // code = 0
-    $packet .= chr(0); // checksum init
-    $packet .= chr(0); // checksum init
-    $packet .= chr($ident[0]); // identifier
-    $packet .= chr($ident[1]); // identifier
-    $packet .= chr($seq[0]); // seq
-    $packet .= chr($seq[1]); // seq
-    for ($i = 0; $i < $datasize; $i++)
-    $packet .= chr(0);
-    $chk = icmp_checksum($packet);
-    $packet[2] = $chk[0]; // checksum init
-    $packet[3] = $chk[1]; // checksum init
+    $timeout = 1;
+    $ip = phpfm_host2ip($ip);
     $socket = socket_create(AF_INET, SOCK_RAW, getprotobyname('icmp'));
-    if ($socket === false) {
-        $g_icmp_error = socket_strerror(socket_last_error());
-        return -1;
-    }
-    $time_start = microtime();
-    socket_sendto($socket, $packet, strlen($packet), 0, $host, $port);
-    $read   = array($socket);
-    $write  = NULL;
-    $except = NULL;
-    $socket_select_init_time = getmicrotime();
-    $num_changed_sockets = socket_select($read, $write, $except, 0, $timeout * 1000);
-    $response_time = getmicrotime()-$socket_select_init_time;
-    if ($num_changed_sockets === NULL || $num_changed_sockets === false) {
-        $error = socket_strerror(socket_last_error());
-        $g_icmp_error = "Error: ".$error;
-        return -1;
-    } elseif ($num_changed_sockets === 0) {
-        $response_time = getmicrotime()-$socket_select_init_time;
-        if ($response_time > $timeout * 1000) $g_icmp_error = "Timeout";
-        else $g_icmp_error = "No Response";
-        return -1;
-    }
-    $recv = '';
-    $time_stop = microtime();
-    socket_recvfrom($socket, $recv, 65535, 0, $host, $port);
-    $recv = unpack('C*', $recv);
-    if ($recv[10] !== 1) { // ICMP proto = 1
-        $g_icmp_error = "Not ICMP packet";
-        socket_close($socket);
-        return -1;
-    }
-    if ($recv[21] !== 0) { // ICMP response = 0
-        $g_icmp_error = "Not ICMP response";
-        socket_close($socket);
-        return -1;
-    }
-    if ($ident[0] !== $recv[25] || $ident[1] !== $recv[26]) {
-        $g_icmp_error = "Bad identification number";
-        socket_close($socket);
-        return -1;
-    }
-    if ($seq[0] !== $recv[27] || $seq[1] !== $recv[28]) {
-        $g_icmp_error = "Bad sequence number";
-        socket_close($socket);
-        return -1;
-    }
-    $ms = ($time_stop - $time_start) * 1000;
-    if ($ms < 0) {
-        $g_icmp_error = "Response too long";
-        $ms = -1;
+    socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => 1, 'usec' => 0));
+    socket_connect($socket, $ip, 0);
+    $ping_ok = false;
+    $ping_retry = 3;
+    for ($i=0;$i<$ping_retry;$i++) {
+        $time_start = microtime(true);
+        $package  = "\x08\x00\x19\x2f\x00\x00\x00\x00\x70\x69\x6e\x67";
+        socket_send($socket, $package, strlen($package), 0);
+        if (socket_read($socket, 255)) {
+            $ping_ok = true;
+        }
+        $time_stop = microtime(true);
+        $ms = ($time_stop - $time_start) * 1000;
+        if ($ping_ok) break;
+        else usleep(250); //ms
     }
     socket_close($socket);
-    return number_format((float)$ms, 2, '.', '');
+    if ($ping_ok) $output = number_format((float)$ms, 2, '.', '');
+    elseif ($ms > $timeout * 1000) $output = 'Timeout';
+    else $output = 'No response';
+    return $ping_ok;
 }
-function icmp_checksum($data) {
-    $bit = unpack('n*', $data);
-    $sum = array_sum($bit);
-    if (strlen($data) % 2) {
-        $temp = unpack('C*', $data[strlen($data) - 1]);
-        $sum += $temp[1];
+function phpfm_portscan($ip,$ports=false){
+    global $services;
+    if (!function_exists("fsockopen")) {
+        return "Function fsockopen() not available";
     }
-    $sum = ($sum >> 16) + ($sum & 0xffff);
-    $sum += ($sum >> 16);
-    return pack('n*', ~$sum);
+    $timeout = 1;
+    $open_ports = 0;
+    $ip = phpfm_host2ip($ip);
+    $resul = '│ Scan: '.$ip.'<br>';
+    if ($ports === false) $ports = array_keys($services);
+    foreach ($ports as $port) {
+        $fp = @fsockopen($ip, $port, $errno, $errstr, $timeout);
+        if($fp){
+            $resul .= '│ Port: <font color="green">'.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>';
+            $open_ports++;
+            fclose($fp);
+        }
+    }
+    if ($open_ports == 0){
+        $resul .= '│ No open ports<br>';
+    }
+    return $resul;
 }
 /*
 https://www.ricardoarrigoni.com.br/tabela-ascii-completa/
-XXXXXXX
-┌─────-─┘
-├─► xxxxxxx
-└─► xxxxxxx
 ┌─────────┐
 │ XXXXXXX │
 ├───-─────┘
@@ -4289,83 +4221,30 @@ XXXXXXX
 ╟► xxxxxxx
 ╙► xxxxxxx
 */
-function portscan($ip,$ports=false){
-    global $services;
-    $resul = '';
-    $timeout = 2;
-    if ($ports === false) $ports = array_keys($services);
-    foreach ($ports as $port) {
-        $fp = @fsockopen($ip, $port, $errno, $errstr, $timeout);
-        if($fp){
-            $resul .= '├─► Port: <font color="green"><b>'.$port.(isset($services[$port])?'</b> = '.$services[$port]:'').'</font><br>';
-            fclose($fp);
-        }
-    }
-    return $resul;
-}
 function portscan_form(){
     global $cfg;
     global $fm_current_dir,$fm_file,$doc_root,$fm_path_info,$fm_current_root;
     global $ip,$lan_ip;
-    global $portscan_action,$g_icmp_error,$portscan_ip,$portscan_ips,$portscan_port,$portscan_ports,$services,$default_portscan_ports;
+    global $portscan_action,$portscan_ip,$portscan_ips,$portscan_port,$portscan_ports,$services,$default_portscan_ports,$portscan_ignore_ping;
     switch ($portscan_action){
-        case 1:
-            @ini_set("max_execution_time",30);
-            html_header();
-            echo "<body style=\"margin:5px; background-color:#fff;\">";
-            $hosts_found = 0;
-            $hosts_miss = array();
-            $m = explode(".",$lan_ip);
-            $inet = $m[0].".".$m[1].".".$m[2].".";
-            $max_hip = 254;
-            echo "Searching hosts from ".$inet."1 to ".$inet.$max_hip."<br><br>";
-            for ($hip=1;$hip<=$max_hip;$hip++){
-                $host = $inet.$hip;
-                $pingTime = ping($host);
-                if ($pingTime>0) {
-                    @ini_set("max_execution_time",120);
-                    $hosts_found++;
-                    echo "Ping: ".$host." = ".$pingTime."ms<br>\n";
-                    echo portscan($host)."<br>\n";
-                } else {
-                    $hosts_miss[] = "Ping: ".$host." = ".$g_icmp_error;
-                }
-            }
-            if ($hosts_found == 0) {
-                echo "No hosts found.<br>\n<br>\n";
-                if (count($hosts_miss)) echo implode($hosts_miss,"<br>\n");
-            }
-            echo "</body>\n</html>";
-            die();
-        break;
-        case 2:
+        case 2: // Do Ping
             @ini_set("max_execution_time",30);
             header("Content-type: text/plain");
-            $ping_retries = 5;
-            $g_icmp_errors = array();
-            for ($i=0;$i<$ping_retries;$i++){
-                $ms = ping($portscan_ip);
-                if ($ms >= 0) {
-                    echo $ms;
-                    die();
-                } else {
-                    $g_icmp_errors[] = $g_icmp_error;
-                }
-            }
-            //echo implode(' - ',$g_icmp_errors);
-            echo $g_icmp_errors[0];
+            $output = '';
+            phpfm_ping($portscan_ip,$output);
+            echo $output;
             die();
         break;
-        case 3:
+        case 3: // Scan Port
             @ini_set("max_execution_time",30);
             header("Content-type: text/plain");
-            echo portscan($portscan_ip,array($portscan_port));
+            echo phpfm_portscan($portscan_ip,array($portscan_port));
             die();
         break;
-        case 4:
+        case 4: // Scan Multiple Ports
             @ini_set("max_execution_time",120);
             header("Content-type: text/plain");
-            echo portscan($portscan_ip,explode(',',$portscan_ports));
+            echo phpfm_portscan($portscan_ip,explode(',',$portscan_ports));
             die();
         break;
     }
@@ -4396,6 +4275,18 @@ function portscan_form(){
             float: left;
             margin-right: 6px;
         }
+        #div_toolbar .portscan_ignore_ping {
+            display: inline-block;
+            float: left;
+            border: 1px solid #aaa;
+            background-color: #ddd;
+            padding: 3px 6px 4px 3px;
+            margin-right: 6px;
+            margin-top: 1px;
+        }
+        #div_toolbar .portscan_ignore_ping input, #div_toolbar .portscan_ignore_ping label {
+            cursor: pointer;
+        }
         #portscanIframe {
             position: relative;
             display: block;
@@ -4418,6 +4309,7 @@ function portscan_form(){
                 <tr><td align=right width=1><nobr>Hosts:</nobr><td><input type=\"text\" style=\"width:430px; padding:5px 8px;\" name=\"portscan_ip_range\" value=\"".html_encode($portscan_ip_range)."\"></td></tr>
                 <tr><td align=right width=1><nobr>Ports:</nobr><td><input type=\"text\" style=\"width:430px; padding:5px 8px;\" name=\"portscan_port_range\" value=\"".html_encode($portscan_port_range)."\"></td></tr>
                 <tr><td>&nbsp;</td><td>
+                <div class=\"portscan_ignore_ping\"><input type=\"checkbox\" name=\"portscan_ignore_ping\" id=\"portscan_ignore_ping\" value=\"1\"".($portscan_ignore_ping?' checked':'')." onclick=\"set_ping_cookie()\"><label for=\"portscan_ignore_ping\" class=\"noselect\">&nbsp;Ignore Ping</label></div>
                 <button type=\"button\" class=\"btn\" onclick=\"execute_portscan()\" value=\"".et('Exec')."\"><i class=\"fa fa-refresh\"></i> ".et('Exec')."</button>
                 <button type=\"button\" class=\"btn\" onclick=\"stop_portscan()\" value=\"".et('Stop')."\"><i class=\"fa fa-delete\"></i> ".et('Stop')."</button>
                 </td></tr>
@@ -4446,6 +4338,7 @@ function portscan_form(){
         var portscan_ips, portscan_ports;
         var portscan_curr_ip, portscan_curr_port;
         var all_ports_one_request = true;
+        var portscan_ignore_ping = ".($portscan_ignore_ping?'true':'false').";
         var portscan_execute_flag = false;
         function get_boxed_text(str){
             str = String(str);
@@ -4453,13 +4346,14 @@ function portscan_form(){
             var arr = str.split(br);
             var max_str_length = 0;
             for(var i=0;i<arr.length;i++){
-                arr[i] = String(arr[i]);
-                if (arr[i].length > max_str_length) max_str_length = arr[i].length;
+                line_strip_tags = String(arr[i]).replace(/<\/?[^>]+(>|$)/g, \"\");
+                if (line_strip_tags.length > max_str_length) max_str_length = line_strip_tags.length;
             }
             var out = '';
             out += '┌'+rep('─',max_str_length+2)+'┐'+br;
             for(var i=0;i<arr.length;i++){
-                out += '│ '+arr[i]+rep('&nbsp;',(max_str_length-arr[i].length))+' │';
+                line_strip_tags = String(arr[i]).replace(/<\/?[^>]+(>|$)/g, \"\");
+                out += '│ '+arr[i]+rep('&nbsp;',(max_str_length-line_strip_tags.length))+' │';
                 if (i<arr.length) out += br;
             }
             out += '└'+rep('─',max_str_length+2)+'┘'+br;
@@ -4476,11 +4370,16 @@ function portscan_form(){
             var iframe_window = document.getElementById('portscanIframe').contentWindow;
             iframe_window.scrollTo( 0, 999999 );
         }
-        write_to_iframe('<b>Note:</b> Maybe the server does not allow local network access using PHP sockets.<br>And that´s good! This was major firewall security problem on older PHP versions.<br><br>');
-        write_to_iframe('<b>Hosts examples:</b><br>Single: 192.168.0.1<br>Range: 192.168.0.1-254<br>Multiple: 192.168.0.1,192.168.0.2,192.168.0.3<br><br>');
-        write_to_iframe('".$services_txt."<br>');
+        write_to_iframe(get_boxed_text('PHP File Manager - Portscan<br><br><b>Note:</b> Maybe the server does not allow local network access using PHP sockets.<br>And that´s good! This was major firewall security problem on older PHP versions.'));
+        write_to_iframe(get_boxed_text('<b>Hosts examples:</b><br>Single: phpfm.sf.net<br>Single: 192.168.0.1<br>Range: 192.168.0.1-254<br>Multiple: phpfm.sf.net,192.168.0.1,192.168.0.2'));
+        write_to_iframe(get_boxed_text('".$services_txt."'));
         function stop_portscan(){
             portscan_execute_flag = false;
+        }
+        function set_ping_cookie(){
+            portscan_ignore_ping = $('#portscan_ignore_ping').prop('checked');
+            var value = portscan_ignore_ping?1:0;
+            setCookiePersistent('portscan_ignore_ping',value);
         }
         function execute_portscan(){
             iframe_text = '';
@@ -4489,9 +4388,10 @@ function portscan_form(){
             setCookie('portscan_ip_range',portscan_ip_range);
             setCookie('portscan_port_range',portscan_port_range);
             var portscan_command_str = '';
-            portscan_command_str += 'Scanning hosts: '+portscan_ip_range+'<br>';
-            portscan_command_str += 'Scanning ports: '+portscan_port_range+'<br>';
-            portscan_command_str += 'Ping max 3 times, timeout 3s...';
+            portscan_command_str += 'PHP File Manager - Portscan<br><br>';
+            portscan_command_str += 'Hosts: '+portscan_ip_range+'<br>';
+            portscan_command_str += 'Scan Ports: '+portscan_port_range+'<br>';
+            portscan_command_str += 'Ignore Ping: '+(portscan_ignore_ping?'Yes':'No');
             portscan_ips = [];
             portscan_ports = portscan_port_range.split(',');
             if (portscan_ip_range.indexOf('-') != -1){
@@ -4516,7 +4416,8 @@ function portscan_form(){
             if (portscan_execute_flag) {
                 if (portscan_curr_ip<portscan_ips.length){
                     ip = portscan_ips[portscan_curr_ip];
-                    write_to_iframe(get_boxed_text('Ping: '+ip));
+                    write_to_iframe('│ <br>');
+                    write_to_iframe('│ Ping: '+ip+' -> ');
                     iframe_scroll_down();
                     $.get(
                         '".$fm_path_info["basename"]."',
@@ -4527,19 +4428,17 @@ function portscan_form(){
                         },
                         function (data){
                             data = String(data).trim();
-                            if (data.length > 0) {
-                                ms = parseFloat(data);
-                                if (ms > 0) {
-                                    write_to_iframe('├─► '+ms+'ms (scanning ports...)<br>');
-                                    iframe_scroll_down();
-                                    portscan_curr_port = 0;
-                                    do_scan();
-                                } else {
-                                    write_to_iframe('├─► '+data+'<br>');
-                                    iframe_scroll_down();
-                                    portscan_curr_ip++;
-                                    do_ping();
-                                }
+                            if (data.length == 0) data = 'Server Error';
+                            var ping_time = parseFloat(data);
+                            if (ping_time > 0) {
+                                write_to_iframe('<font color=\"green\">'+ping_time+'ms</font><br>');
+                            } else {
+                                write_to_iframe('<font color=\"#777\">'+data+'</font><br>');
+                            }
+                            iframe_scroll_down();
+                            if (ping_time > 0 || portscan_ignore_ping) {
+                                portscan_curr_port = 0;
+                                do_scan();
                             } else {
                                 portscan_curr_ip++;
                                 do_ping();
@@ -4547,10 +4446,12 @@ function portscan_form(){
                         }
                     )
                 } else {
+                    write_to_iframe('│ <br>');
                     write_to_iframe(get_boxed_text('Portscan finished'));
                     iframe_scroll_down();
                 }
             } else {
+                write_to_iframe('│ <br>');
                 write_to_iframe(get_boxed_text('Portscan stopped'));
                 iframe_scroll_down();
             }
