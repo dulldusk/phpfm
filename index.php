@@ -4469,7 +4469,7 @@ function portscan_form(){
             iframe_text += str;
             var iframe_body = document.getElementById('portscanIframe').contentWindow.document;
             iframe_body.open();
-            iframe_body.write('<style>body { margin:5px; background-color:#000; color:#fff; } </style><div style=\"width:100%; height:100%; font-family:Courier; font-size:12px; font-weight:normal; color:#eee;\">'+iframe_text+'</div>');
+            iframe_body.write('<style>body { margin:5px; background-color:#000; color:#fff; } </style><div style=\"width:100%; height:100%; font-family:Courier New; font-size:10pt; font-weight:normal; color:#aaa;\">'+iframe_text+'</div>');
             iframe_body.close();
         }
         function iframe_scroll_down(){
@@ -4999,7 +4999,9 @@ function shell_form(){
             ?>
             <body marginwidth="0" marginheight="0">
                 <style>
-                    .terminal {
+                    .terminal, .cmd {
+                        font-family: Courier New;
+                        font-size: 10pt;
                     }
                 </style>
                 <script>
