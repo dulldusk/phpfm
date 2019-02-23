@@ -2108,16 +2108,19 @@ function frame2(){
     echo "</body>\n</html>";
 }
 function is_binary($file){
+    //https://stackoverflow.com/questions/1765311/how-to-view-files-in-binary-from-bash
+    //http://php.net/manual/pt_BR/function.bin2hex.php
     if (!is_file($file)) return false;
-    fb_log($file,mime_content_type($file));
-    if (strpos(mime_content_type($file),'application') === 0) return true;
+    $mime = mime_content_type($file);
+    fb_log($file,$mime);
+    if (strpos($mime,'text') === false && strpos($mime,'x-empty') === false) return true;
     return false;
 }
 function is_textfile($file){
     if (!is_file($file)) return false;
-    fb_log($file,mime_content_type($file));
-    if (strpos(mime_content_type($file),'text') === 0) return true;
-    if (strpos(mime_content_type($file),'x-empty') !== false) return true;
+    $mime = mime_content_type($file);
+    fb_log($file,$mime);
+    if (strpos($mime,'text') === 0 || strpos($mime,'x-empty') !== false) return true;
     return false;
 }
 function dir_list_form() {
@@ -2169,10 +2172,14 @@ function dir_list_form() {
             document.getElementById(\"modalIframeWrapper\").style.display = ('block');
             document.getElementById(\"modalIframeWrapperTitle\").innerHTML = title;
             document.getElementById(\"modalIframe\").focus();
+            document.body.style.overflow = 'hidden';
+            window.scrollTo(0,0);
+
         }
         function closeModalWindow(){
             document.getElementById(\"modalIframe\").src = '';
             document.getElementById(\"modalIframeWrapper\").style.display=('none');
+            document.body.style.overflow = 'auto';
             if (modalWindowReloadOnClose) {
                 window.parent.frame3.location.href='".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."';
             }
@@ -3736,16 +3743,20 @@ function edit_file_form(){
     if ($save_file){
         if (is_binary($file)){
             $file_data = base64_decode($file_data);
+            //$file_data = hex2bin($file_data);
         }
-        if (file_put_contents($file,$file_data)){
+        if (file_put_contents($file,$file_data,FILE_BINARY)){
             $save_msg = et("FileSaved")."!";
             $reload = true;
         } else $save_msg = et("FileSaveError")."...";
     }
     clearstatcache();
-    $file_data = file_get_contents($file);
+    $file_data = file_get_contents($file,FILE_BINARY);
     if (is_binary($file)){
         $file_data = base64_encode($file_data);
+        //$file_data = bin2hex($file_data);
+        //$file_data = chunk_split($file_data,2,"\\x");
+        //$file_data = "\\x".substr($file_data,0,-2);
     }
     //<link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=prism.css\" media=\"screen\" />
     html_header("
@@ -3815,7 +3826,7 @@ function edit_file_form(){
             theme: 'ace/theme/monokai',
             mode: 'ace/mode/".$ace_mode_curr."',
             useWorker: false,
-            //wrap: 350,
+            //wrap: 200,
             showPrintMargin: false,
             fontSize: '12px'
         });
@@ -4053,7 +4064,7 @@ function config_form(){
         <!--
             $('#newlang').val('".$cfg->data['lang']."');
             $('#newtimezone').val('".$cfg->data['timezone']."');
-            $('#newerror').val('".$cfg->data['laerror_reportingng']."');
+            $('#newerror').val('".$cfg->data['error_reporting']."');
             function test_config_form(arg){
                 document.config_form.config_action.value = arg;
                 document.config_form.submit();
