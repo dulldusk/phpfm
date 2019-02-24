@@ -53,32 +53,32 @@ $fm_color['Over'] = "C0EBFD";
 $fm_color['Mark'] = "A7D2E4";
 // https://pt.wikipedia.org/wiki/Lista_de_portas_dos_protocolos_TCP_e_UDP
 $services = array();
-$services['13:UDP'] = "DAYTIME";
+//$services['13:UDP'] = "DAYTIME";
 $services['21'] = "FTP";
 $services['22'] = "SSH";
 $services['23'] = "TELNET";
 $services['25'] = "SMTP";
-$services['53:UDP'] = "DNS";
-$services['67:UDP'] = "DHCP";
-$services['68:UDP'] = "BOOTP";
-$services['69:UDP'] = "TFTP";
+//$services['53:UDP'] = "DNS";
+//$services['67:UDP'] = "DHCP";
+//$services['68:UDP'] = "BOOTP";
+//$services['69:UDP'] = "TFTP";
 $services['80'] = "HTTPD";
 $services['110'] = "POP3";
-$services['123:UDP'] = "NTP";
-$services['137:UDP'] = "NETBIOS-NS";
-$services['138:UDP'] = "NETBIOS-DATA";
+//$services['123:UDP'] = "NTP";
+//$services['137:UDP'] = "NETBIOS-NS";
+//$services['138:UDP'] = "NETBIOS-DATA";
 $services['139'] = "NETBIOS-SESSION";
 $services['143'] = "IMAP";
 $services['161'] = "SNMP";
 $services['389'] = "LDAP";
 $services['445'] = "SMB-AD";
-$services['445:UDP'] = "SMB-FS";
+//$services['445:UDP'] = "SMB-FS";
 $services['465'] = "SMTPS-SSL";
 $services['512'] = "RPC";
 $services['514'] = "RSH";
-$services['514:UDP'] = "SYSLOG";
+//$services['514:UDP'] = "SYSLOG";
 $services['515'] = "LPD-PRINTER";
-$services['520:UDP'] = "RIP-ROUTER";
+//$services['520:UDP'] = "RIP-ROUTER";
 $services['530'] = "RPC";
 $services['540'] = "UUCP";
 $services['544'] = "KSHELL";
@@ -102,13 +102,6 @@ $services['8200'] = "GOTOMYPC";
 $services['10000'] = "VIRTUALMIN-ADMIN";
 $services['27017'] = "MONGODB";
 $services['50000'] = "DB2";
-$services_inverted = array_flip($services);
-$default_portscan_services = explode(",","DAYTIME,FTP,SSH,TELNET,DNS,DHCP,NETBIOS-SESSION,SNMP,LDAP,SMB-AD,MSSQL,ORACLE,MYSQL/MARIADB,RDESKTOP,VNC,HTTPD-ALT");
-$default_portscan_ports = array();
-foreach ($default_portscan_services as $name) {
-    $default_portscan_ports[] = $services_inverted[$name];
-}
-$default_portscan_ports = implode(",",$default_portscan_ports);
 // +--------------------------------------------------
 // | Header and Globals
 // +--------------------------------------------------
@@ -4217,28 +4210,44 @@ function phpfm_ping($host_or_ip,&$output) {
     if ($ip != $host_or_ip) $output .= ' ('.$ip.')';
     return $ping_ok;
 }
-function phpfm_portscan($host_or_ip,$ports=false){
+function phpfm_portscan($ip,$port,&$output){
     global $services;
-    if ($ports === false) $ports = array_keys($services);
     if (!function_exists("fsockopen")) {
         return "Function fsockopen() not available";
     }
     $timeout = 1;
-    $ip = phpfm_host2ip($host_or_ip);
-    $resul = '';
-    foreach ($ports as $port) {
-        $proto_ip = $ip;
-        if (stripos($port,'udp') !== false) $proto_ip = 'udp://'.$ip;
-        $port_nr = str_strip($port,'1234567890');
-        $fp = @fsockopen($proto_ip, $port_nr, $errno, $errstr, $timeout);
-        if($fp){
-            $resul .= '│ <font color="green">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>';
-            fclose($fp);
+    $proto_ip = $ip;
+    if (stripos($port,'udp') !== false) $proto_ip = 'udp://'.$ip;
+    $port_nr = str_strip($port,'1234567890');
+    $port_open = false;
+    $fp = @fsockopen($proto_ip, $port_nr, $errno, $errstr, $timeout);
+    $fb_out = '';
+    if($fp){
+        // TODO: UDP port scan needs more testing..
+        if (stripos($port,'udp') !== false) {
+            stream_set_timeout($fp, 3);
+            stream_set_write_buffer($fp, 0);
+            stream_set_read_buffer($fp, 0);
+            if (fwrite($fp,"test\n") !== falze){
+                $fb_out = trim(stream_get_contents($fp));
+                $info = stream_get_meta_data($fp);
+                if (!$info['timed_out'] && $fb_out !== false) {
+                    if (strlen($fb_out)){
+                        $port_open = true;
+                    }
+                }
+            }
         } else {
-            $resul .= '│ <font color="brown">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>'; // '.$errstr.' ('.$errno.')
+            $port_open = true;
         }
+        fclose($fp);
     }
-    return $resul;
+    if ($port_open) {
+        $output = '│ <font color="green">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>';
+    } else {
+        $output = '│ <font color="brown">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>'; // '.$errstr.' ('.$errno.')
+    }
+    return $port_open;
 }
 /*
 https://www.ricardoarrigoni.com.br/tabela-ascii-completa/
@@ -4257,7 +4266,14 @@ function portscan_form(){
     global $cfg;
     global $fm_current_dir,$fm_file,$doc_root,$fm_path_info,$fm_current_root;
     global $ip,$lan_ip;
-    global $portscan_action,$portscan_ip,$portscan_ips,$portscan_port,$portscan_ports,$services,$default_portscan_ports,$portscan_ignore_ping;
+    global $portscan_action,$portscan_ip,$portscan_ips,$portscan_port,$portscan_ports,$services,$portscan_ignore_ping;
+    $services_inverted = array_flip($services);
+    $default_portscan_services = explode(",","DAYTIME,FTP,SSH,TELNET,DNS,DHCP,NETBIOS-SESSION,SNMP,LDAP,SMB-AD,MSSQL,ORACLE,MYSQL/MARIADB,RDESKTOP,VNC,HTTPD-ALT");
+    $default_portscan_ports = array();
+    foreach ($default_portscan_services as $name) {
+        $default_portscan_ports[] = $services_inverted[$name];
+    }
+    $default_portscan_ports = implode(",",$default_portscan_ports);
     switch ($portscan_action){
         case 2: // Do Ping
             @ini_set("max_execution_time",30);
@@ -4270,14 +4286,25 @@ function portscan_form(){
         break;
         case 3: // Scan Port
             @ini_set("max_execution_time",30);
-            header("Content-type: text/plain");
-            echo phpfm_portscan($portscan_ip,array($portscan_port));
+            $output = '';
+            $portscan_ip = phpfm_host2ip($portscan_ip);
+            $port_open = phpfm_portscan($portscan_ip,$portscan_port,$output);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(array($port_open,$output));
             die();
         break;
         case 4: // Scan Multiple Ports
             @ini_set("max_execution_time",120);
-            header("Content-type: text/plain");
-            echo phpfm_portscan($portscan_ip,explode(',',$portscan_ports));
+            $portscan_ip = phpfm_host2ip($portscan_ip);
+            $portscan_ports = explode(',',$portscan_ports);
+            $resul = array();
+            foreach ($portscan_ports as $portscan_port) {
+                $output = '';
+                $port_open = phpfm_portscan($portscan_ip,$portscan_port,$output);
+                $resul[] = array($port_open,$output);
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($resul);
             die();
         break;
     }
@@ -4374,6 +4401,7 @@ function portscan_form(){
         var portscan_ignore_ping = ".($portscan_ignore_ping?'true':'false').";
         var portscan_execute_flag = false;
         var all_service_ports = ".json_encode(array_keys($services)).";
+        var portscan_ports_failed = 0;
         function get_boxed_text(str){
             str = String(str);
             var br = '<br>';
@@ -4456,7 +4484,7 @@ function portscan_form(){
             if (portscan_execute_flag) {
                 if (portscan_curr_ip<portscan_ips.length){
                     ip = portscan_ips[portscan_curr_ip];
-                    write_to_iframe('│ Ping: '+ip+' -> ');
+                    write_to_iframe('│ Ping: '+ip+' = ');
                     iframe_scroll_down();
                     $.ajax({
                         type: 'POST',
@@ -4472,11 +4500,12 @@ function portscan_form(){
                             if (data[0]) {
                                 write_to_iframe('<font color=\"green\">'+data[1]+'</font><br>');
                             } else {
-                                write_to_iframe('<font color=\"#777\">'+data[1]+'</font><br>');
+                                write_to_iframe('<font color=\"brown\">'+data[1]+'</font><br>');
                             }
                             iframe_scroll_down();
                             if ((data[0] || portscan_ignore_ping) && portscan_ports.length > 0) {
                                 portscan_curr_port = 0;
+                                portscan_ports_failed = 0
                                 do_scan();
                             } else {
                                 portscan_curr_ip++;
@@ -4518,28 +4547,43 @@ function portscan_form(){
                     }
                 )
             } else {
-                if (portscan_curr_port<portscan_ports.length){
+                if (portscan_curr_port<portscan_ports.length && portscan_execute_flag){
                     port = portscan_ports[portscan_curr_port];
-                    //console.log('scan: '+ip+' '+port);
-                    $.get(
-                        '".$fm_path_info["basename"]."',
-                        {
+                    iframe_scroll_down();
+                    $.ajax({
+                        type: 'POST',
+                        url: '".$fm_path_info["basename"]."',
+                        dataType: 'json',
+                        crossDomain: false,
+                        data: {
                             action : 12,
                             portscan_action: 3,
                             portscan_ip : ip,
                             portscan_port : port
                         },
-                        function (data){
-                            data = String(data).trim();
-                            if (data.length > 0) {
-                                write_to_iframe(data);
+                        success: function (data){
+                            if (data[0]) {
+                                if (portscan_ports_failed > 0) write_to_iframe('<br>');
+                                write_to_iframe(data[1]);
                                 iframe_scroll_down();
+                                portscan_ports_failed = 0;
+                            } else {
+                                if (portscan_ports_failed == 0) write_to_iframe('│ ');
+                                write_to_iframe('<font color=\"brown\">.</font>');
+                                portscan_ports_failed++;
                             }
                             portscan_curr_port++;
                             do_scan();
+                        },
+                        error: function (err){
+                            write_to_iframe('<font color=\"brown\">.</font>');
+                            portscan_ports_failed++;
+                            portscan_curr_port++;
+                            do_scan();
                         }
-                    )
+                    })
                 } else {
+                    if (portscan_ports_failed > 0) write_to_iframe('<br>');
                     portscan_curr_ip++;
                     do_ping();
                 }
