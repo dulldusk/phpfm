@@ -65,6 +65,10 @@ $services[143] = "IMAP";
 $services[161] = "SNMP";
 $services[389] = "NETBIOS-LDAP";
 $services[445] = "NETBIOS-CIFS";
+$services[465] = "SMTPS SSL";
+$services[587] = "SMTPS TLS";
+$services[993] = "IMAPS";
+$services[995] = "POP3S";
 $services[1433] = "MSSQL";
 $services[1521] = "ORACLE";
 $services[3306] = "MYSQL-MARIADB";
@@ -76,7 +80,7 @@ $services[8200] = "GOTOMYPC";
 $services[10000] = "VIRTUALMIN HTTP ADMIN";
 $services[27017] = "MONGODB";
 $services[50000] = "DB2";
-$default_portscan_ports = "21,22,23,25,80,110,137,143,161,1433,1521,3306,3389,5900,8080";
+$default_portscan_ports = "21,22,23,80,139,161,1433,1521,3306,3389,5900,8080";
 // +--------------------------------------------------
 // | Header and Globals
 // +--------------------------------------------------
@@ -4155,19 +4159,19 @@ function phpfm_host2ip($host_or_ip){
     if (filter_var($host_or_ip, FILTER_VALIDATE_IP)) return $host_or_ip;
     else return gethostbyname($host_or_ip);
 }
-function phpfm_ping($ip,&$output) {
+function phpfm_ping($host_or_ip,&$output) {
     if (!function_exists("socket_create")) {
         $output = "Function socket_create() not available";
         return false;
     }
     $timeout = 1;
-    $ip = phpfm_host2ip($ip);
+    $ip = phpfm_host2ip($host_or_ip);
     $socket = socket_create(AF_INET, SOCK_RAW, getprotobyname('icmp'));
-    socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => 1, 'usec' => 0));
+    socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $timeout, 'usec' => 0));
     socket_connect($socket, $ip, 0);
     $ping_ok = false;
-    $ping_retry = 3;
-    for ($i=0;$i<$ping_retry;$i++) {
+    $ping_tries = 2;
+    for ($i=0;$i<$ping_tries;$i++) {
         $time_start = microtime(true);
         $package  = "\x08\x00\x19\x2f\x00\x00\x00\x00\x70\x69\x6e\x67";
         socket_send($socket, $package, strlen($package), 0);
@@ -4177,34 +4181,34 @@ function phpfm_ping($ip,&$output) {
         $time_stop = microtime(true);
         $ms = ($time_stop - $time_start) * 1000;
         if ($ping_ok) break;
-        else usleep(250); //ms
     }
     socket_close($socket);
-    if ($ping_ok) $output = number_format((float)$ms, 2, '.', '');
+    if ($ping_ok) $output = number_format((float)$ms, 2, '.', '').'ms';
     elseif ($ms > $timeout * 1000) $output = 'Timeout';
     else $output = 'No response';
+    if ($ip != $host_or_ip) $output .= ' ('.$ip.')';
     return $ping_ok;
 }
-function phpfm_portscan($ip,$ports=false){
+function phpfm_portscan($host_or_ip,$ports=false){
     global $services;
     if (!function_exists("fsockopen")) {
         return "Function fsockopen() not available";
     }
     $timeout = 1;
     $open_ports = 0;
-    $ip = phpfm_host2ip($ip);
-    $resul = '│ Scan: '.$ip.'<br>';
+    $ip = phpfm_host2ip($host_or_ip);
+    $resul = '';
     if ($ports === false) $ports = array_keys($services);
     foreach ($ports as $port) {
         $fp = @fsockopen($ip, $port, $errno, $errstr, $timeout);
         if($fp){
-            $resul .= '│ Port: <font color="green">'.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>';
+            $resul .= '│ <font color="green">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>';
             $open_ports++;
             fclose($fp);
         }
     }
     if ($open_ports == 0){
-        $resul .= '│ No open ports<br>';
+        $resul .= '│ <font color="brown">No open ports</font><br>';
     }
     return $resul;
 }
@@ -4231,8 +4235,9 @@ function portscan_form(){
             @ini_set("max_execution_time",30);
             header("Content-type: text/plain");
             $output = '';
-            phpfm_ping($portscan_ip,$output);
-            echo $output;
+            $ping_ok = phpfm_ping($portscan_ip,$output);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(array($ping_ok,$output));
             die();
         break;
         case 3: // Scan Port
@@ -4307,7 +4312,7 @@ function portscan_form(){
             <tr><td valign=top width=1>
                 <table border=0 cellspacing=0 cellpadding=5>
                 <tr><td align=right width=1><nobr>Hosts:</nobr><td><input type=\"text\" style=\"width:430px; padding:5px 8px;\" name=\"portscan_ip_range\" value=\"".html_encode($portscan_ip_range)."\"></td></tr>
-                <tr><td align=right width=1><nobr>Ports:</nobr><td><input type=\"text\" style=\"width:430px; padding:5px 8px;\" name=\"portscan_port_range\" value=\"".html_encode($portscan_port_range)."\"></td></tr>
+                <tr><td align=right width=1><nobr>Scan Ports:</nobr><td><input type=\"text\" style=\"width:430px; padding:5px 8px;\" name=\"portscan_port_range\" value=\"".html_encode($portscan_port_range)."\"></td></tr>
                 <tr><td>&nbsp;</td><td>
                 <div class=\"portscan_ignore_ping\"><input type=\"checkbox\" name=\"portscan_ignore_ping\" id=\"portscan_ignore_ping\" value=\"1\"".($portscan_ignore_ping?' checked':'')." onclick=\"set_ping_cookie()\"><label for=\"portscan_ignore_ping\" class=\"noselect\">&nbsp;Ignore Ping</label></div>
                 <button type=\"button\" class=\"btn\" onclick=\"execute_portscan()\" value=\"".et('Exec')."\"><i class=\"fa fa-refresh\"></i> ".et('Exec')."</button>
@@ -4327,9 +4332,9 @@ function portscan_form(){
     </div>
     <iframe id=\"portscanIframe\" name=\"portscanIframe\" src=\"\" scrolling=\"yes\" frameborder=\"0\"></iframe>
     ";
-    $services_txt = '<b>Ports reference:</b><br>';
+    $ports_reference = array();
     foreach ($services as $port => $service){
-        $services_txt .= "$port = $service<br>";
+        $ports_reference[] = "$port = $service";
     }
     echo "
     <script language=\"Javascript\" type=\"text/javascript\">
@@ -4372,7 +4377,7 @@ function portscan_form(){
         }
         write_to_iframe(get_boxed_text('PHP File Manager - Portscan<br><br><b>Note:</b> Maybe the server does not allow local network access using PHP sockets.<br>And that´s good! This was major firewall security problem on older PHP versions.'));
         write_to_iframe(get_boxed_text('<b>Hosts examples:</b><br>Single: phpfm.sf.net<br>Single: 192.168.0.1<br>Range: 192.168.0.1-254<br>Multiple: phpfm.sf.net,192.168.0.1,192.168.0.2'));
-        write_to_iframe(get_boxed_text('".$services_txt."'));
+        write_to_iframe(get_boxed_text('<b>Ports reference:</b><br>".implode('<br>',$ports_reference)."'));
         function stop_portscan(){
             portscan_execute_flag = false;
         }
@@ -4383,8 +4388,8 @@ function portscan_form(){
         }
         function execute_portscan(){
             iframe_text = '';
-            portscan_ip_range = document.portscan_form.portscan_ip_range.value;
-            portscan_port_range = document.portscan_form.portscan_port_range.value;
+            portscan_ip_range = String(document.portscan_form.portscan_ip_range.value).trim();
+            portscan_port_range = String(document.portscan_form.portscan_port_range.value).trim();
             setCookie('portscan_ip_range',portscan_ip_range);
             setCookie('portscan_port_range',portscan_port_range);
             var portscan_command_str = '';
@@ -4393,19 +4398,24 @@ function portscan_form(){
             portscan_command_str += 'Scan Ports: '+portscan_port_range+'<br>';
             portscan_command_str += 'Ignore Ping: '+(portscan_ignore_ping?'Yes':'No');
             portscan_ips = [];
-            portscan_ports = portscan_port_range.split(',');
-            if (portscan_ip_range.indexOf('-') != -1){
-                portscan_ip_range = portscan_ip_range.split('-');
-                portscan_inet = portscan_ip_range[0].substr(0,portscan_ip_range[0].lastIndexOf('.')+1);
-                portscan_start = parseInt(portscan_ip_range[0].substr(portscan_ip_range[0].lastIndexOf('.')+1));
-                portscan_end = parseInt(portscan_ip_range[1]);
-                for(var i=portscan_start;i<=portscan_end;i++){
-                    portscan_ips.push(portscan_inet+i);
+            portscan_ports = [];
+            if (portscan_port_range.length > 0) {
+                portscan_ports = portscan_port_range.split(',');
+            }
+            if (portscan_ip_range.length > 0) {
+                if (portscan_ip_range.indexOf('-') != -1){
+                    portscan_ip_range = portscan_ip_range.split('-');
+                    portscan_inet = portscan_ip_range[0].substr(0,portscan_ip_range[0].lastIndexOf('.')+1);
+                    portscan_start = parseInt(portscan_ip_range[0].substr(portscan_ip_range[0].lastIndexOf('.')+1));
+                    portscan_end = parseInt(portscan_ip_range[1]);
+                    for(var i=portscan_start;i<=portscan_end;i++){
+                        portscan_ips.push(portscan_inet+i);
+                    }
+                } else if (portscan_ip_range.indexOf(',') != -1){
+                    portscan_ips = portscan_ip_range.split(',');
+                } else {
+                    portscan_ips.push(portscan_ip_range);
                 }
-            } else if (portscan_ip_range.indexOf(',') != -1){
-                portscan_ips = portscan_ip_range.split(',');
-            } else {
-                portscan_ips.push(portscan_ip_range);
             }
             write_to_iframe(get_boxed_text(portscan_command_str));
             portscan_curr_ip = 0;
@@ -4416,42 +4426,42 @@ function portscan_form(){
             if (portscan_execute_flag) {
                 if (portscan_curr_ip<portscan_ips.length){
                     ip = portscan_ips[portscan_curr_ip];
-                    write_to_iframe('│ <br>');
                     write_to_iframe('│ Ping: '+ip+' -> ');
                     iframe_scroll_down();
-                    $.get(
-                        '".$fm_path_info["basename"]."',
-                        {
+                    $.ajax({
+                        type: 'POST',
+                        url: '".$fm_path_info["basename"]."',
+                        dataType: 'json',
+                        crossDomain: false,
+                        data: {
                             action : 12,
                             portscan_action: 2,
                             portscan_ip : ip
                         },
-                        function (data){
-                            data = String(data).trim();
-                            if (data.length == 0) data = 'Server Error';
-                            var ping_time = parseFloat(data);
-                            if (ping_time > 0) {
-                                write_to_iframe('<font color=\"green\">'+ping_time+'ms</font><br>');
+                        success: function (data){
+                            if (data[0]) {
+                                write_to_iframe('<font color=\"green\">'+data[1]+'</font><br>');
                             } else {
-                                write_to_iframe('<font color=\"#777\">'+data+'</font><br>');
+                                write_to_iframe('<font color=\"#777\">'+data[1]+'</font><br>');
                             }
                             iframe_scroll_down();
-                            if (ping_time > 0 || portscan_ignore_ping) {
+                            if ((data[0] || portscan_ignore_ping) && portscan_ports.length > 0) {
                                 portscan_curr_port = 0;
                                 do_scan();
                             } else {
                                 portscan_curr_ip++;
                                 do_ping();
                             }
+                        },
+                        error: function (err){
+                            write_to_iframe('<font color=\"#777\">Server error</font><br>');
                         }
-                    )
+                    })
                 } else {
-                    write_to_iframe('│ <br>');
                     write_to_iframe(get_boxed_text('Portscan finished'));
                     iframe_scroll_down();
                 }
             } else {
-                write_to_iframe('│ <br>');
                 write_to_iframe(get_boxed_text('Portscan stopped'));
                 iframe_scroll_down();
             }
