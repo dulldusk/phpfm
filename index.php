@@ -1033,6 +1033,18 @@ function save_upload($temp_file,$filename,$dir_dest) {
     } else $out = 4;
     return $out;
 }
+// Note: readlink() may return a relative path, with or without ./, and that is not good for is_file() is_dir() and broken link evaluation, because we can´t always chdir() to the link basepath.
+function readlink_absolute_path($path){
+    if (!is_link($path)) return $path;
+    $target = readlink($path);
+    if (strpos($target,'.'.DIRECTORY_SEPARATOR) === 0){
+        $target = substr($target,2); // remove ./
+    }
+    if (($is_windows && substr($target,2,1) != ':') || (!$is_windows && substr($target,0,1) != DIRECTORY_SEPARATOR)){ // check if does not start with C: or / = relative path
+        $target = substr($path,0,strrpos($path,DIRECTORY_SEPARATOR)+1).$target; // complete the target using origin path
+    }
+    return $target;
+}
 // +--------------------------------------------------
 // | Data Formating
 // +--------------------------------------------------
@@ -2274,7 +2286,8 @@ function dir_list_form() {
             if (is_link($fm_current_dir.$entry)){
                 $entry_list[$entry_count]["type"] = "link";
                 $entry_list[$entry_count]["target"] = readlink($fm_current_dir.$entry);
-                if (is_dir($entry_list[$entry_count]["target"])) {
+                $entry_list[$entry_count]["target_absolute_path"] = readlink_absolute_path($fm_current_dir.$entry);
+                if (is_dir($entry_list[$entry_count]["target_absolute_path"])) {
                     $entry_list[$entry_count]["type"] = "dir";
                     $dirsize = phpfm_get_total_size($fm_current_dir.$entry);
                     $entry_list[$entry_count]["size"] = intval($dirsize);
@@ -2286,7 +2299,7 @@ function dir_list_form() {
                         $sizet = format_size($entry_list[$entry_count]["size"]).' &#x21bb';
                     }
                     $entry_list[$entry_count]["sizet"] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
-                } elseif (is_file($entry_list[$entry_count]["target"])) {
+                } elseif (is_file($entry_list[$entry_count]["target_absolute_path"])) {
                     $entry_list[$entry_count]["type"] = "file";
                     $entry_list[$entry_count]["size"] = filesize($fm_current_dir.$entry);
                     $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
@@ -2923,16 +2936,17 @@ function dir_list_form() {
         $out = '';
         if (is_link(rtrim($path,DIRECTORY_SEPARATOR))){
             $target = readlink(rtrim($path,DIRECTORY_SEPARATOR));
-            if (is_dir($target)){
+            $target_absolute_path = readlink_absolute_path(rtrim($path,DIRECTORY_SEPARATOR));
+            if (is_dir($target_absolute_path)){
                 $breadcrumbs = array();
-                foreach (explode(DIRECTORY_SEPARATOR, $target) as $r) {
-                    $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr($target, $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
+                foreach (explode(DIRECTORY_SEPARATOR, $target_absolute_path) as $r) {
+                    $breadcrumbs[] = '<a href="'.$fm_path_info['basename'].'?frame=3&fm_current_dir='.strstr($target_absolute_path, $r, true).$r.DIRECTORY_SEPARATOR.'">'.$r.'</a>';
                 }
                 if (count($breadcrumbs)){
                     $out .= '&nbsp;<b>(L)</b>&nbsp;&nbsp;🡺&nbsp;&nbsp;'.implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs);
                 }
-                if (is_link($target)){
-                    $out .= get_link_breadcrumbs($target);
+                if (is_link($target_absolute_path)){
+                    $out .= get_link_breadcrumbs($target_absolute_path);
                 }
             }
         }
