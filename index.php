@@ -379,6 +379,7 @@ if (!isset($fm_current_dir)){
 }
 $fm_current_root = rtrim($fm_current_root,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 $fm_current_dir = rtrim($fm_current_dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+@chdir($fm_current_dir); // Note: So is_link(), is_file(), is_dir() and other functions work with relative paths too.
 //fb_log('fm_root',$fm_root);
 //fb_log('fm_current_root',$fm_current_root);
 //fb_log('fm_current_dir',$fm_current_dir);
