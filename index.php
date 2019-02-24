@@ -2,7 +2,7 @@
 /*--------------------------------------------------
  | PHP FILE MANAGER
  +--------------------------------------------------
- | phpFileManager 1.7.8
+ | phpFileManager 1.7.9
  | By Fabricio Seger Kolling
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.8';
+$version = '1.7.9';
 $charset = 'UTF-8';
 $debug_mode = false;
 $max_php_recursion = 200;
