@@ -4228,6 +4228,7 @@ function phpfm_portscan($ip,$port,&$output){
             stream_set_timeout($fp, 3);
             stream_set_write_buffer($fp, 0);
             stream_set_read_buffer($fp, 0);
+            stream_set_blocking($fp, true);
             if (fwrite($fp,"test\n") !== falze){
                 $fb_out = trim(stream_get_contents($fp));
                 $info = stream_get_meta_data($fp);
@@ -4271,7 +4272,7 @@ function portscan_form(){
     $default_portscan_services = explode(",","DAYTIME,FTP,SSH,TELNET,DNS,DHCP,NETBIOS-SESSION,SNMP,LDAP,SMB-AD,MSSQL,ORACLE,MYSQL/MARIADB,RDESKTOP,VNC,HTTPD-ALT");
     $default_portscan_ports = array();
     foreach ($default_portscan_services as $name) {
-        $default_portscan_ports[] = $services_inverted[$name];
+        if (isset($services_inverted[$name])) $default_portscan_ports[] = $services_inverted[$name];
     }
     $default_portscan_ports = implode(",",$default_portscan_ports);
     switch ($portscan_action){
