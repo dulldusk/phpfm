@@ -7,7 +7,7 @@
  | Copyright (c) 2004-2019 Fabrício Seger Kolling
  | E-mail: dulldusk@gmail.com
  | URL: http://phpfm.sf.net
- | Last Changed: 2019-02-23
+ | Last Changed: 2019-02-24
  +--------------------------------------------------
  | It is the AUTHOR'S REQUEST that you keep intact the above header information
  | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -459,8 +459,11 @@ function is_rwx_phpfm($file,$what='r'){
         $GLOBALS['script_info'] = array();
         $GLOBALS['script_info']['sys_uname'] = function_exists('posix_uname') ? @posix_uname() : '';
         $GLOBALS['script_info']['sys_hostname'] = function_exists('gethostname') ? @gethostname() : '';
+        if (!strlen($GLOBALS['script_info']['sys_hostname'])){
+            $GLOBALS['script_info']['sys_hostname'] = @getenv('COMPUTERNAME');
+        }
         $GLOBALS['script_info']['script_user_id'] = function_exists('posix_getuid') ? @posix_getuid() : '';
-        $GLOBALS['script_info']['script_user_name'] = '';
+        $GLOBALS['script_info']['script_user_name'] = $GLOBALS['script_info']['script_user_id'];
         $GLOBALS['script_info']['script_user_home'] = '';
         $GLOBALS['script_info']['script_user_shell'] = '';
         $GLOBALS['script_info']['script_user_group_id'] = '';
@@ -468,9 +471,9 @@ function is_rwx_phpfm($file,$what='r'){
         $GLOBALS['script_info']['script_user_group_ids'] = array();
         $GLOBALS['script_info']['script_user_group_names'] = array();
         $GLOBALS['script_info']['script_group_id'] = function_exists('posix_getgid') ? @posix_getgid() : '';
-        $GLOBALS['script_info']['script_group_name'] = '';
+        $GLOBALS['script_info']['script_group_name'] = $GLOBALS['script_info']['script_group_id'];
         $GLOBALS['script_info']['script_group_members'] = '';
-        if (!strlen($GLOBALS['script_info']['script_user_name']) && $GLOBALS['script_info']['script_user_id'] && function_exists('posix_getpwuid')) {
+        if ($GLOBALS['script_info']['script_user_id'] && function_exists('posix_getpwuid')) {
             $info = posix_getpwuid($GLOBALS['script_info']['script_user_id']);
             $GLOBALS['script_info']['script_user_home'] = $info['dir'];
             $GLOBALS['script_info']['script_user_shell'] = $info['shell'];
@@ -2200,6 +2203,9 @@ function dir_list_form() {
             height: 100%;
             overflow-y: scroll;
             overflow-x: auto;
+        }
+        #modalIframeWrapperTitle {
+            padding-left: 5px;
         }
     </style>
     <div id=\"modalIframeWrapper\">
@@ -4413,13 +4419,13 @@ function portscan_form(){
                 if (line_strip_tags.length > max_str_length) max_str_length = line_strip_tags.length;
             }
             var out = '';
-            out += '┌'+rep('─',max_str_length+2)+'┐'+br;
+            out += '<nobr>┌'+rep('─',max_str_length+2)+'┐<nobr>'+br;
             for(var i=0;i<arr.length;i++){
                 line_strip_tags = String(arr[i]).replace(/<\/?[^>]+(>|$)/g, \"\");
-                out += '│ '+arr[i]+rep('&nbsp;',(max_str_length-line_strip_tags.length))+' │';
+                out += '<nobr>│ '+arr[i]+rep('&nbsp;',(max_str_length-line_strip_tags.length))+' │<nobr>';
                 if (i<arr.length) out += br;
             }
-            out += '└'+rep('─',max_str_length+2)+'┘'+br;
+            out += '<nobr>└'+rep('─',max_str_length+2)+'┘<nobr>'+br;
             return out;
         }
         function write_to_iframe(str){
@@ -4433,8 +4439,7 @@ function portscan_form(){
             var iframe_window = document.getElementById('portscanIframe').contentWindow;
             iframe_window.scrollTo( 0, 999999 );
         }
-        write_to_iframe(get_boxed_text('PHP File Manager - Portscan<br><br><b>Note:</b> Maybe the server does not allow local network access using PHP sockets.<br>And that´s good! This was major firewall security problem on older PHP versions.'));
-        write_to_iframe(get_boxed_text('<b>Hosts examples:</b><br>Single: phpfm.sf.net<br>Single: 192.168.0.1<br>Range: 192.168.0.1-254<br>Multiple: phpfm.sf.net,192.168.0.1,192.168.0.2'));
+        write_to_iframe(get_boxed_text('PHP File Manager - Portscan<br><br><b>Hosts examples:</b><br>Single: phpfm.sf.net<br>Single: 192.168.0.1<br>Range: 192.168.0.1-254<br>Multiple: phpfm.sf.net,192.168.0.1,192.168.0.2'));
         write_to_iframe(get_boxed_text('<b>Ports reference:</b><br>* = ALL<br>".implode('<br>',$ports_reference)."'));
         function stop_portscan(){
             portscan_execute_flag = false;
@@ -4961,14 +4966,19 @@ function shell_form(){
             $username = $GLOBALS['script_info']['script_user_name'];
             $groupname = $GLOBALS['script_info']['script_group_name'];
             $hostname = $GLOBALS['script_info']['sys_hostname'];
+            $ugh = '';
+            if (strlen($username)) $ugh .= $username;
+            if (strlen($groupname)) $ugh .= ':'.$groupname;
+            if (strlen($hostname)) $ugh .= '@'.$hostname;
             $prompt_start = '[';
-            if (strlen($username)) $prompt_start .= $username;
-            if (strlen($groupname)) $prompt_start .= ':'.$groupname;
-            if (strlen($hostname)) $prompt_start .= '@'.$hostname;
             if ($username == 'root') $prompt_end .= ']# ';
             else $prompt_end .= ']$ ';
             $greetings = array();
             $greetings[] = 'PHP File Manager - Shell Terminal Emulator';
+            $greetings[] = '';
+            if (strlen($username)) $greetings[] = 'User: '.$username;
+            if (strlen($groupname)) $greetings[] = 'Group: '.$groupname;
+            if (strlen($hostname)) $greetings[] = 'Host: '.$hostname;
             $exec_functions = array('proc_open','exec','shell_exec','system','passthru','popen');
             $is_exec_disabled = true;
             foreach ($exec_functions as $f) {
@@ -4982,6 +4992,8 @@ function shell_form(){
                 $greetings[] = 'Warning: All PHP system exec functions are disabled.';
                 $greetings[] = implode('(),',$exec_functions).'()';
             }
+            $shell_current_dir = $fm_current_dir;
+            if (strlen($_COOKIE['shell_current_dir'])) $shell_current_dir = $_COOKIE['shell_current_dir'];
             ?>
             <body marginwidth="0" marginheight="0">
                 <style>
@@ -5009,7 +5021,7 @@ function shell_form(){
                         out += '└'+rep('─',max_str_length+2)+'┘'+br;
                         return out;
                     }
-                    var fm_current_dir = '<?php echo addslashes(rtrim($fm_current_dir,DIRECTORY_SEPARATOR)); ?>';
+                    var shell_current_dir = '<?php echo addslashes(rtrim($shell_current_dir,DIRECTORY_SEPARATOR)); ?>';
                     jQuery(document).ready(function($) {
                         $('body').terminal(
                             function(command, term) {
@@ -5020,7 +5032,7 @@ function shell_form(){
                                     var timestamp = new Date().getTime();
                                     $.ajax({
                                         type: 'POST',
-                                        url: '<?php echo $fm_path_info["basename"]; ?>?action=9&shell_form=1&fm_current_dir='+fm_current_dir,
+                                        url: '<?php echo $fm_path_info["basename"]; ?>?action=9&shell_form=1&fm_current_dir='+shell_current_dir,
                                         dataType: 'json',
                                         crossDomain: false,
                                         data: JSON.stringify(
@@ -5036,7 +5048,8 @@ function shell_form(){
                                                 if (data.error.code == 100) term.echo(data.error.error.name+': '+data.error.error.message).resume(); // Server Error
                                                 else term.echo(data.error.name+': '+data.error.message).resume();
                                             } else {
-                                                fm_current_dir = data.fm_current_dir;
+                                                shell_current_dir = data.fm_current_dir;
+                                                setCookie('shell_current_dir',shell_current_dir);
                                                 term.echo(data.result).resume();
                                             }
                                         },
@@ -5049,8 +5062,8 @@ function shell_form(){
                             {
                                 greetings: get_boxed_text('<?php echo implode('\n',$greetings)?>'),
                                 prompt: function(callback) {
-                                    //console.log(fm_current_dir);
-                                    callback('<?php echo $prompt_start; ?> '+fm_current_dir+'<?php echo $prompt_end; ?>');
+                                    //console.log(shell_current_dir);
+                                    callback('<?php echo $prompt_start; ?>'+shell_current_dir+'<?php echo $prompt_end; ?>');
                                 },
                                 name: 'shell',
                                 tabcompletion: true,
