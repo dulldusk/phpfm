@@ -51,36 +51,64 @@ $fm_color['Link'] = "0A77F7";
 $fm_color['Entry'] = "FFFFFF";
 $fm_color['Over'] = "C0EBFD";
 $fm_color['Mark'] = "A7D2E4";
+// https://pt.wikipedia.org/wiki/Lista_de_portas_dos_protocolos_TCP_e_UDP
 $services = array();
-$services[21] = "FTP";
-$services[22] = "SSH";
-$services[23] = "TELNET";
-$services[25] = "SMTP";
-$services[80] = "HTTPD";
-$services[110] = "POP3";
-$services[137] = "NETBIOS-NS";
-$services[138] = "NETBIOS-DGM";
-$services[139] = "NETBIOS-SSN";
-$services[143] = "IMAP";
-$services[161] = "SNMP";
-$services[389] = "NETBIOS-LDAP";
-$services[445] = "NETBIOS-CIFS";
-$services[465] = "SMTPS SSL";
-$services[587] = "SMTPS TLS";
-$services[993] = "IMAPS";
-$services[995] = "POP3S";
-$services[1433] = "MSSQL";
-$services[1521] = "ORACLE";
-$services[3306] = "MYSQL-MARIADB";
-$services[3389] = "REMOTE DESKTOP";
-$services[5900] = "VNC";
-$services[7778] = "KLOXO HTTP ADMIN";
-$services[8080] = "HTTPD";
-$services[8200] = "GOTOMYPC";
-$services[10000] = "VIRTUALMIN HTTP ADMIN";
-$services[27017] = "MONGODB";
-$services[50000] = "DB2";
-$default_portscan_ports = "21,22,23,80,139,161,1433,1521,3306,3389,5900,8080";
+$services['13:UDP'] = "DAYTIME";
+$services['21'] = "FTP";
+$services['22'] = "SSH";
+$services['23'] = "TELNET";
+$services['25'] = "SMTP";
+$services['53:UDP'] = "DNS";
+$services['67:UDP'] = "DHCP";
+$services['68:UDP'] = "BOOTP";
+$services['69:UDP'] = "TFTP";
+$services['80'] = "HTTPD";
+$services['110'] = "POP3";
+$services['123:UDP'] = "NTP";
+$services['137:UDP'] = "NETBIOS-NS";
+$services['138:UDP'] = "NETBIOS-DATA";
+$services['139'] = "NETBIOS-SESSION";
+$services['143'] = "IMAP";
+$services['161'] = "SNMP";
+$services['389'] = "LDAP";
+$services['445'] = "SMB-AD";
+$services['445:UDP'] = "SMB-FS";
+$services['465'] = "SMTPS-SSL";
+$services['512'] = "RPC";
+$services['514'] = "RSH";
+$services['514:UDP'] = "SYSLOG";
+$services['515'] = "LPD-PRINTER";
+$services['520:UDP'] = "RIP-ROUTER";
+$services['530'] = "RPC";
+$services['540'] = "UUCP";
+$services['544'] = "KSHELL";
+$services['556'] = "REMOTE-FS";
+$services['587'] = "SMTPS-TLS";
+$services['593'] = "HTTP-RPC";
+$services['631'] = "IPP";
+$services['636'] = "LDAPS";
+$services['993'] = "IMAPS";
+$services['995'] = "POP3S";
+$services['990'] = "FTPS";
+$services['992'] = "TELNETS";
+$services['1433'] = "MSSQL";
+$services['1521'] = "ORACLE";
+$services['3306'] = "MYSQL/MARIADB";
+$services['3389'] = "RDESKTOP";
+$services['5900'] = "VNC";
+$services['7778'] = "KLOXO-ADMIN";
+$services['8080'] = "HTTPD-ALT";
+$services['8200'] = "GOTOMYPC";
+$services['10000'] = "VIRTUALMIN-ADMIN";
+$services['27017'] = "MONGODB";
+$services['50000'] = "DB2";
+$services_inverted = array_flip($services);
+$default_portscan_services = explode(",","DAYTIME,FTP,SSH,TELNET,DNS,DHCP,NETBIOS-SESSION,SNMP,LDAP,SMB-AD,MSSQL,ORACLE,MYSQL/MARIADB,RDESKTOP,VNC,HTTPD-ALT");
+$default_portscan_ports = array();
+foreach ($default_portscan_services as $name) {
+    $default_portscan_ports[] = $services_inverted[$name];
+}
+$default_portscan_ports = implode(",",$default_portscan_ports);
 // +--------------------------------------------------
 // | Header and Globals
 // +--------------------------------------------------
@@ -4191,24 +4219,24 @@ function phpfm_ping($host_or_ip,&$output) {
 }
 function phpfm_portscan($host_or_ip,$ports=false){
     global $services;
+    if ($ports === false) $ports = array_keys($services);
     if (!function_exists("fsockopen")) {
         return "Function fsockopen() not available";
     }
     $timeout = 1;
-    $open_ports = 0;
     $ip = phpfm_host2ip($host_or_ip);
     $resul = '';
-    if ($ports === false) $ports = array_keys($services);
     foreach ($ports as $port) {
-        $fp = @fsockopen($ip, $port, $errno, $errstr, $timeout);
+        $proto_ip = $ip;
+        if (stripos($port,'udp') !== false) $proto_ip = 'udp://'.$ip;
+        $port_nr = str_strip($port,'1234567890');
+        $fp = @fsockopen($proto_ip, $port_nr, $errno, $errstr, $timeout);
         if($fp){
             $resul .= '│ <font color="green">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>';
-            $open_ports++;
             fclose($fp);
+        } else {
+            $resul .= '│ <font color="brown">Port: '.$port.(isset($services[$port])?' = '.$services[$port]:'').'</font><br>'; // '.$errstr.' ('.$errno.')
         }
-    }
-    if ($open_ports == 0){
-        $resul .= '│ <font color="brown">No open ports</font><br>';
     }
     return $resul;
 }
@@ -4342,9 +4370,10 @@ function portscan_form(){
         var iframe_text = '';
         var portscan_ips, portscan_ports;
         var portscan_curr_ip, portscan_curr_port;
-        var all_ports_one_request = true;
+        var all_ports_one_request = false;
         var portscan_ignore_ping = ".($portscan_ignore_ping?'true':'false').";
         var portscan_execute_flag = false;
+        var all_service_ports = ".json_encode(array_keys($services)).";
         function get_boxed_text(str){
             str = String(str);
             var br = '<br>';
@@ -4377,7 +4406,7 @@ function portscan_form(){
         }
         write_to_iframe(get_boxed_text('PHP File Manager - Portscan<br><br><b>Note:</b> Maybe the server does not allow local network access using PHP sockets.<br>And that´s good! This was major firewall security problem on older PHP versions.'));
         write_to_iframe(get_boxed_text('<b>Hosts examples:</b><br>Single: phpfm.sf.net<br>Single: 192.168.0.1<br>Range: 192.168.0.1-254<br>Multiple: phpfm.sf.net,192.168.0.1,192.168.0.2'));
-        write_to_iframe(get_boxed_text('<b>Ports reference:</b><br>".implode('<br>',$ports_reference)."'));
+        write_to_iframe(get_boxed_text('<b>Ports reference:</b><br>* = ALL<br>".implode('<br>',$ports_reference)."'));
         function stop_portscan(){
             portscan_execute_flag = false;
         }
@@ -4400,7 +4429,8 @@ function portscan_form(){
             portscan_ips = [];
             portscan_ports = [];
             if (portscan_port_range.length > 0) {
-                portscan_ports = portscan_port_range.split(',');
+                if (portscan_port_range == '*') portscan_ports = all_service_ports;
+                else portscan_ports = portscan_port_range.split(',');
             }
             if (portscan_ip_range.length > 0) {
                 if (portscan_ip_range.indexOf('-') != -1){
