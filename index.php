@@ -786,9 +786,10 @@ function php_get_total_size_execute($path) {
     }
     return $total_size;
 }
-function php_shred($filepath,$delete=true) {
+function php_shred($filepath) {
     // Based on https://github.com/DanielRuf/secure-shred (MIT license)
     // https://www.aldeid.com/wiki/Secure-delete-files
+    // TODO: test write each pass, and rename the file before delete.
     try {
         // clear stat cache to avoid falsely reported file status
         // use $filepath parameter to possibly improve performance
@@ -807,13 +808,12 @@ function php_shred($filepath,$delete=true) {
                     $write->fflush();
                 }
             }
-            if ($delete) $write->ftruncate(0);
+            $write->ftruncate(0);
             $read = $write = null;
-            if ($delete) return unlink($filepath);
-            return true;
+            return unlink($filepath);
         }
     } catch(\Exception $e) {
-        fb_log($e->getMessage().'('.$e->getCode().')');
+        fb_log($e->getMessage().' ('.$e->getCode().')');
     }
     return false;
 }
@@ -2727,10 +2727,12 @@ function dir_list_form() {
             document.form_action.cmd_arg.value = prompt('".et('TypeArq').".');
         } else if (arg == 71){
             if (!is_anything_selected()) erro = '".et('NoSel')."...';
-            var zipname = '';
-            if (last_entry_selected != '') zipname = last_entry_selected+'.zip';
-            if (total_files_selected + total_dirs_selected == 1) document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."',zipname);
-            else document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."');
+            else {
+                var zipname = '';
+                if (last_entry_selected != '') zipname = last_entry_selected+'.zip';
+                if (total_files_selected + total_dirs_selected == 1) document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."',zipname);
+                else document.form_action.cmd_arg.value = prompt('".et('TypeArqComp')."');
+            }
         }
         if (erro!=''){
             document.form_action.cmd_arg.focus();
