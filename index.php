@@ -2176,20 +2176,31 @@ function dir_list_form() {
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
         var modalWindowReloadOnClose = false;
+        var modalWindowCurrSrc = '';
+        function toogleModalWindow(url,title,reloadOnClose){
+            if (document.getElementById(\"modalIframeWrapper\").style.display == '' || modalWindowCurrSrc != url){
+                openModalWindow(url,title,reloadOnClose);
+            } else {
+                modalWindowReloadOnClose = false;
+                closeModalWindow();
+            }
+        }
         function openModalWindow(url,title,reloadOnClose){
             cancel_copy_move();
             if (typeof(title) == 'undefined') title = '';
             if (typeof(reloadOnClose) != 'undefined') modalWindowReloadOnClose = reloadOnClose;
-            document.getElementById(\"modalIframe\").src = url;
-            document.getElementById(\"modalIframeWrapper\").style.display = ('block');
+            if (modalWindowCurrSrc != url) {
+                document.getElementById(\"modalIframe\").src = url;
+            }
+            modalWindowCurrSrc = url;
+            document.getElementById(\"modalIframeWrapper\").style.display = 'block';
             document.getElementById(\"modalIframeWrapperTitle\").innerHTML = title;
             document.getElementById(\"modalIframe\").focus();
             document.body.style.overflow = 'hidden';
             window.scrollTo(0,0);
         }
         function closeModalWindow(){
-            document.getElementById(\"modalIframe\").src = '';
-            document.getElementById(\"modalIframeWrapper\").style.display=('none');
+            document.getElementById(\"modalIframeWrapper\").style.display = '';
             document.body.style.overflow = 'auto';
             if (modalWindowReloadOnClose) {
                 window.parent.frame3.location.href='".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."';
@@ -2450,8 +2461,9 @@ function dir_list_form() {
         } else {
             multipleSelection = (e.which == 1);
         }
-        var type = String(e.target.type);
-        return (type.indexOf('select') != -1 || type.indexOf('button') != -1 || type.indexOf('input') != -1 || type.indexOf('radio') != -1);
+        return false;
+        //var type = String(e.target.type);
+        //return (type.indexOf('select') != -1 || type.indexOf('button') != -1 || type.indexOf('input') != -1 || type.indexOf('radio') != -1);
     }
     function switch_flag_off(e) {
         if (is.ie){
@@ -2615,28 +2627,28 @@ function dir_list_form() {
         return true;
     }
     function upload_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',true);
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',true);
     }
     function edit_file_form(arg){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." ".addslashes($fm_current_dir)."'+(arg));
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." ".addslashes($fm_current_dir)."'+(arg));
     }
     function config_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."');
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."');
     }
     function server_info_form(arg){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."');
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."');
     }
     function shell_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',true);
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',true);
     }
     function portscan_form(){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."');
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."');
     }
     function about_form(){
-        openModalWindow('//www.dulldusk.com/phpfm?version=".$version."','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."');
+        toogleModalWindow('//www.dulldusk.com/phpfm?version=".$version."','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."');
     }
     function view_form(arg){
-        openModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg));
+        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg));
     }
     function download_entry(arg){
         parent.frame1.location.href='".addslashes($fm_path_info["basename"])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
@@ -2650,7 +2662,7 @@ function dir_list_form() {
     }
     function execute_entry(arg){
         if(confirm('".et('ConfExec')." \\''+arg+'\\' ?')) {
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg));
+            toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg));
         }
     }
     function delete_entry(arg){
@@ -2697,7 +2709,7 @@ function dir_list_form() {
         cancel_copy_move();
         if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
         else {
-            openModalWindow('".addslashes($fm_path_info["basename"])."?action=8&chmod_arg='+encodeURIComponent(document.form_action.chmod_arg.value),'".et('Perms')."');
+            toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=8&chmod_arg='+encodeURIComponent(document.form_action.chmod_arg.value),'".et('Perms')."');
             document.form_action.dir_dest.value='';
             document.form_action.chmod_arg.value='';
         }
@@ -4955,9 +4967,9 @@ function shell_form(){
             ?>
             <body marginwidth="0" marginheight="0">
                 <style>
-                    .terminal, .cmd {
-                        font-family: Courier New;
-                        font-size: 10pt;
+                    .cmd, .cmd div, .cmd span, .terminal, .terminal span, .terminal-output span {
+                        font-family: Courier New !important;
+                        font-size: 10pt !important;
                     }
                 </style>
                 <script>
