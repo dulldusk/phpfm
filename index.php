@@ -7,7 +7,7 @@
 | Copyright (c) 2004-2019 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2019-02-24
+| Last Changed: 2019-03-18
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -727,26 +727,43 @@ function dir_list_update_total_size(){
     echo $total_size;
     die();
 }
+// INFO: php filesize() returns ZERO for files over 4Gb
+function phpfm_filesize($file){
+    $filesize = intval(filesize($file));
+    if ($filesize <= 0) $filesize = system_get_total_size($file);
+    return $filesize;
+}
 function system_get_total_size($path){
     global $is_windows;
     $total_size = false;
     if ($is_windows){
         if (class_exists('COM')) {
-            $obj = new COM('scripting.filesystemobject');
-            if (is_object($obj)) {
-                $ref = $obj->getfolder($path);
-                $total_size = intval($ref->size);
-                $obj = null;
-                unset($obj);
+            $fsobj = new COM('Scripting.FileSystemObject');
+            if (is_object($fsobj)) {
+                if (is_dir($path)) $ref = $fsobj->GetFolder($path);
+                else $ref = $fsobj->GetFile($path);
+                if (is_object($ref)) {
+                    $total_size = floatval($ref->size);
+                    $fsobj = null;
+                    unset($fsobj);
+                }
+            }
+        }
+        if ($total_size === false) {
+            if (is_file($path)){
+                $output = '';
+                if (system_exec_cmd('for %I in ('.$path.') do @echo %~zI',$output)){
+                    $total_size = floatval($output);
+                }
             }
         }
     } else {
         $output = '';
         if (system_exec_cmd('du -sb '.$path,$output)){
-            $total_size = intval(substr($output,0,strpos($output,"\t")));
+            $total_size = floatval(substr($output,0,strpos($output,"\t")));
         }
     }
-    if ($total_size === false) fb_log('system_get_total_size("'.$path.'") = false');
+    if ($total_size === false) fb_log('system_get_total_size("'.$path.'") = FALSE');
     else fb_log('system_get_total_size("'.$path.'") = '.format_size($total_size));
     return $total_size;
 }
@@ -778,11 +795,11 @@ function php_get_total_size_execute($path) {
                 }
                 $total_size += $size;
             } else {
-                $total_size += filesize($path.DIRECTORY_SEPARATOR.$entry);
+                $total_size += phpfm_filesize($path.DIRECTORY_SEPARATOR.$entry);
             }
         }
     } else {
-        $total_size = filesize($path);
+        $total_size = phpfm_filesize($path);
     }
     return $total_size;
 }
@@ -890,10 +907,10 @@ function download(){
             }
         }
         if (!$is_denied){
-            $size = filesize($file);
+            $size = phpfm_filesize($file);
             header("Content-Type: application/save");
             header("Content-Length: $size");
-            header("Content-Disposition: attachment; filename=\"$filename\"");
+            header("Content-Disposition: attachment; filename=\"".$filename."\"");
             header("Content-Transfer-Encoding: binary");
             if ($fh = fopen("$file", "rb")){
                 fpassthru($fh);
@@ -944,7 +961,7 @@ function save_upload($temp_file,$filename,$dir_dest) {
     if ($debug_mode) return;
     $filename = remove_special_chars($filename);
     $file = $dir_dest.$filename;
-    $filesize = filesize($temp_file);
+    $filesize = phpfm_filesize($temp_file);
     $is_denied = false;
     foreach($upload_ext_filter as $key=>$ext){
         if (eregi($ext,$filename)){
@@ -1290,9 +1307,6 @@ function format_size($arg) {
         while ($arg >= pow(1024,$j)) ++$j;
         return round($arg / pow(1024,$j-1) * 100) / 100 . $ext[$j-1];
     } else return "0 bytes";
-}
-function get_size($file) {
-    return format_size(filesize($file));
 }
 function check_limit($new_filesize=0) {
     global $fm_current_root;
@@ -2253,7 +2267,7 @@ function dir_list_form() {
                     $entry_list[$entry_count]["sizet"] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
                 } elseif (is_file($entry_list[$entry_count]["target_absolute_path"])) {
                     $entry_list[$entry_count]["type"] = "file";
-                    $entry_list[$entry_count]["size"] = filesize($fm_current_dir.$entry);
+                    $entry_list[$entry_count]["size"] = phpfm_filesize($fm_current_dir.$entry);
                     $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
                     $has_files = true;
                 } else {
@@ -2277,7 +2291,7 @@ function dir_list_form() {
             } elseif (is_file($fm_current_dir.$entry)){
                 $ext = lowercase(strrchr($entry,"."));
                 $entry_list[$entry_count]["type"] = "file";
-                $entry_list[$entry_count]["size"] = filesize($fm_current_dir.$entry);
+                $entry_list[$entry_count]["size"] = phpfm_filesize($fm_current_dir.$entry);
                 $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
                 if (strstr($ext,".")){
                     $entry_list[$entry_count]["ext"] = $ext;
@@ -3659,7 +3673,7 @@ function view_form(){
                     header("Content-Type: ".$ctype);
                     header("Content-Disposition: inline; filename=\"".pathinfo($file, PATHINFO_BASENAME)."\";");
                     header("Content-Transfer-Encoding: binary");
-                    header("Content-Length: ".filesize($file));
+                    header("Content-Length: ".phpfm_filesize($file));
                     @readfile($file);
                     exit();
                 } else echo(et('ReadDenied').": ".$file);
@@ -4080,7 +4094,7 @@ function config_form(){
         <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" autocomplete=\"off\">
         <input type=hidden name=action value=2>
         <input type=hidden name=config_action value=0>
-        <tr><td align=right width=1>".et('FileMan').":<td>".et('Version')." ".$version." (".get_size($fm_file).")</td></tr>
+        <tr><td align=right width=1>".et('FileMan').":<td>".et('Version')." ".$version." (".format_size(phpfm_filesize($fm_file)).")</td></tr>
         <tr><td align=right width=1><nobr>".et('DocRoot').":</nobr><td>".$doc_root."</td></tr>
         <tr><td align=right width=1><nobr>".et('PHPOpenBasedir').":</nobr><td>".(count($open_basedirs)?implode("<br>\n",$open_basedirs):et('PHPOpenBasedirFullAccess'))."</td></tr>
         <tr><td align=right width=1>".et('FMRoot').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" id=\"newfmroot\" name=\"newfmroot\" readonly autocomplete=\"off\" value=\"".html_encode($fm_root)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\"></td></tr>
@@ -5973,7 +5987,7 @@ class zip_file extends archive {
         $central = "";
         if (!empty($this->options['sfx']))
             if ($fp = @fopen($this->options['sfx'], "rb")) {
-                $temp = fread($fp, filesize($this->options['sfx']));
+                $temp = fread($fp, phpfm_filesize($this->options['sfx']));
                 fclose($fp);
                 $this->add_data($temp);
                 $offset += strlen($temp);
