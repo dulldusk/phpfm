@@ -1452,6 +1452,7 @@ function html_header($header=""){
         .table td.sm {
             width: 10px;
             padding: .3rem .6rem;
+            white-space: nowrap;
         }
         table.entry_name_table {
             width: 100%;
