@@ -740,12 +740,15 @@ function system_get_total_size($path){
         if (class_exists('COM')) {
             $fsobj = new COM('Scripting.FileSystemObject');
             if (is_object($fsobj)) {
-                if (is_dir($path)) $ref = $fsobj->GetFolder($path);
-                else $ref = $fsobj->GetFile($path);
-                if (is_object($ref)) {
-                    $total_size = floatval($ref->size);
-                    $fsobj = null;
-                    unset($fsobj);
+                try {
+                    if (is_dir($path)) $ref = $fsobj->GetFolder($path);
+                    else $ref = $fsobj->GetFile($path);
+                    if (is_object($ref)) {
+                        $total_size = floatval($ref->size);
+                        $fsobj = null;
+                        unset($fsobj);
+                    }
+                } catch (Exception $e) {
                 }
             }
         }
@@ -767,6 +770,7 @@ function system_get_total_size($path){
     else fb_log('system_get_total_size("'.$path.'") = '.format_size($total_size));
     return $total_size;
 }
+
 function php_get_total_size($path) {
     global $debug_mode,$max_php_recursion_counter;
     $max_php_recursion_counter = 0;
