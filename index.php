@@ -116,8 +116,8 @@ function log_script_time(){
 }
 $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
 $max_php_recursion_counter = 0;
-if(!isset($_SERVER['PATH_INFO']) && isset($_SERVER["ORIG_PATH_INFO"])) {
-    $_SERVER["PATH_INFO"] = $_SERVER["ORIG_PATH_INFO"];
+if(!isset($_SERVER['PATH_INFO']) && isset($_SERVER['ORIG_PATH_INFO'])) {
+    $_SERVER['PATH_INFO'] = $_SERVER['ORIG_PATH_INFO'];
 }
 function fix_directory_separator($str){
     global $is_windows;
@@ -197,21 +197,21 @@ function get_client_ip() {
 $ip = @get_client_ip();
 $lan_ip = @socket_get_lan_ip();
 function getServerURL() {
-    $url = (lowercase($_SERVER["HTTPS"]) == "on")?"https://":"http://";
-    if (strlen($_SERVER["SERVER_NAME"])) $url .= $_SERVER["SERVER_NAME"];
-    elseif (strlen($_SERVER["HTTP_HOST"])) $url .= $_SERVER["HTTP_HOST"];
-    if ($_SERVER["SERVER_PORT"] != "80" && $_SERVER["SERVER_PORT"] != "443") $url .= ":".$_SERVER["SERVER_PORT"];
+    $url = (lowercase($_SERVER['HTTPS']) == "on")?"https://":"http://";
+    if (strlen($_SERVER['SERVER_NAME'])) $url .= $_SERVER['SERVER_NAME'];
+    elseif (strlen($_SERVER['HTTP_HOST'])) $url .= $_SERVER['HTTP_HOST'];
+    if ($_SERVER['SERVER_PORT'] != "80" && $_SERVER['SERVER_PORT'] != "443") $url .= ":".$_SERVER['SERVER_PORT'];
     return $url;
 }
 function getCompleteURL() {
-    return getServerURL().$_SERVER["REQUEST_URI"];
+    return getServerURL().$_SERVER['REQUEST_URI'];
 }
 $url = @getCompleteURL();
 $url_info = parse_url($url);
-$doc_root = rtrim($_SERVER["DOCUMENT_ROOT"],DIRECTORY_SEPARATOR); // ex: 'C:/htdocs'
+$doc_root = rtrim($_SERVER['DOCUMENT_ROOT'],DIRECTORY_SEPARATOR); // ex: 'C:/htdocs'
 $url_root = rtrim(@getServerURL(),'/'); // ex. 'http://www.site.com'
 $fm_file = __FILE__;
-$fm_url = $url_root.$_SERVER["PHP_SELF"];
+$fm_url = $url_root.$_SERVER['PHP_SELF'];
 $fm_path_info = pathinfo($fm_file);
 $open_basedir_ini = trim(@ini_get("open_basedir"));
 $open_basedirs = array();
@@ -351,7 +351,7 @@ if (count($open_basedirs)){
         }
     }
     if (!$fm_current_root_ok) {
-        $fm_path = rtrim($fm_path_info["dirname"],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+        $fm_path = rtrim($fm_path_info['dirname'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
         foreach ($open_basedirs as $open_basedir) {
             if (strpos($fm_path,$open_basedir) !== false) {
                 $fm_current_root = $open_basedir;
@@ -365,7 +365,7 @@ if (count($open_basedirs)){
     }
 }
 if (!isset($fm_current_dir)){
-    $fm_path = rtrim($fm_path_info["dirname"],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+    $fm_path = rtrim($fm_path_info['dirname'],DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
     if (strpos($fm_path,$fm_current_root) !== false) {
         $fm_current_dir = $fm_path;
     } else {
@@ -1390,7 +1390,7 @@ function html_header($header=""){
     <html xmlns=\"//www.w3.org/1999/xhtml\">
     <head>
     <meta http-equiv=\"content-type\" content=\"text/html; charset=".$charset."\" />
-    <link rel=\"shortcut icon\" href=\"".$fm_path_info["basename"]."?action=99&filename=favicon.ico\" type=\"image/x-icon\">
+    <link rel=\"shortcut icon\" href=\"".$fm_path_info['basename']."?action=99&filename=favicon.ico\" type=\"image/x-icon\">
     <title>".et('FileMan')."</title>
     <style>
         .fm-title { margin: 0; font-weight: 500; line-height: 1.2; font-size: 1.5rem; }
@@ -1511,7 +1511,7 @@ function html_header($header=""){
         .mt-3 { margin-top: 1rem!important; }
         .mt-5 { margin-top: 3rem!important; }
         .icon_loading {
-            background:url('".$fm_path_info["basename"]."?action=99&filename=throbber.gif') 0 0 no-repeat;
+            background:url('".$fm_path_info['basename']."?action=99&filename=throbber.gif') 0 0 no-repeat;
             width: 16px;
             height: 16px;
             line-height: 16px;
@@ -1519,7 +1519,7 @@ function html_header($header=""){
             vertical-align: text-bottom;
         }
         .fa {
-            background:url('".$fm_path_info["basename"]."?action=99&filename=file_sprite.png') 0 0 no-repeat;
+            background:url('".$fm_path_info['basename']."?action=99&filename=file_sprite.png') 0 0 no-repeat;
             width: 18px;
             height: 18px;
             line-height: 18px;
@@ -1758,7 +1758,7 @@ function reloadframe($ref,$frame_number,$plus=""){
     echo "
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
-        ".$ref.".frame".$frame_number.".location.href='".$fm_path_info["basename"]."?frame=".$frame_number."&fm_current_dir=".rawurlencode($fm_current_dir.$plus)."';
+        ".$ref.".frame".$frame_number.".location.href='".$fm_path_info['basename']."?frame=".$frame_number."&fm_current_dir=".rawurlencode($fm_current_dir.$plus)."';
     //-->
     </script>
     ";
@@ -1903,7 +1903,7 @@ function frame2(){
             echo json_encode($resul);
         }
         catch (Exception $e) {
-            header($_SERVER["SERVER_PROTOCOL"] . ' 500 Server Error');
+            header($_SERVER['SERVER_PROTOCOL'] . ' 500 Server Error');
             header('Status:  500 Server Error');
             echo $e->getMessage();
         }
@@ -1945,24 +1945,24 @@ function frame2(){
                 parent.frame3.set_dir_dest(arg+'".addslashes(DIRECTORY_SEPARATOR)."');
                 flag = false;
             } else {
-                parent.frame3.location.href='".addslashes($fm_path_info["basename"])."?frame=3&fm_current_root=".rawurlencode($fm_current_root)."&fm_current_dir='+encodeURIComponent(arg)+'".rawurlencode(DIRECTORY_SEPARATOR)."';
+                parent.frame3.location.href='".addslashes($fm_path_info['basename'])."?frame=3&fm_current_root=".rawurlencode($fm_current_root)."&fm_current_dir='+encodeURIComponent(arg)+'".rawurlencode(DIRECTORY_SEPARATOR)."';
             }
         }
         function set_fm_current_root(arg){
-            document.location.href='".addslashes($fm_path_info["basename"])."?frame=2&fm_current_root='+encodeURIComponent(arg);
+            document.location.href='".addslashes($fm_path_info['basename'])."?frame=2&fm_current_root='+encodeURIComponent(arg);
         }
         function refresh_tree(){
-            document.location.href='".addslashes($fm_path_info["basename"])."?frame=2&fm_current_root=".rawurlencode($fm_current_root)."';
+            document.location.href='".addslashes($fm_path_info['basename'])."?frame=2&fm_current_root=".rawurlencode($fm_current_root)."';
         }
         function logout(){
-            document.location.href='".addslashes($fm_path_info["basename"])."?action=1';
+            document.location.href='".addslashes($fm_path_info['basename'])."?action=1';
         }
     //-->
     </script>
     ";
     echo "<table width=\"100%\" height=\"100%\" border=0 cellspacing=0 cellpadding=5>\n";
     echo "<tr valign=top height=10 bgcolor=\"#DDDDDD\" style=\"border-bottom: 2px solid #eaeaea;\"><td style=\"padding: 6px 6px 1px; 6px;\">";
-    echo "<form style=\"display:inline-block;\" action=\"".$fm_path_info["basename"]."\" method=\"post\" target=\"_parent\">";
+    echo "<form style=\"display:inline-block;\" action=\"".$fm_path_info['basename']."\" method=\"post\" target=\"_parent\">";
         $fm_root_opts=array();
         if (strlen($fm_root) == 0) {
             if (count($open_basedirs)>1){
@@ -1990,13 +1990,13 @@ function frame2(){
     echo "</td></tr>";
     echo "<tr valign=top><td>";
     ?>
-        <script type="text/javascript" src="<?php echo $fm_path_info["basename"]; ?>?action=99&filename=jquery-1.11.1.min.js"></script>
-        <script type="text/javascript" src="<?php echo $fm_path_info["basename"]; ?>?action=99&filename=jstree.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="<?php echo $fm_path_info["basename"]; ?>?action=99&filename=jstree.style.min.css" media="screen" />
+        <script type="text/javascript" src="<?php echo $fm_path_info['basename']; ?>?action=99&filename=jquery-1.11.1.min.js"></script>
+        <script type="text/javascript" src="<?php echo $fm_path_info['basename']; ?>?action=99&filename=jstree.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="<?php echo $fm_path_info['basename']; ?>?action=99&filename=jstree.style.min.css" media="screen" />
         <style>
             #tree { float:left; overflow:auto; padding:0; margin-bottom: 20px;}
-            #tree .folder { background:url('<?php echo $fm_path_info["basename"]; ?>?action=99&filename=file_sprite.png') right bottom no-repeat; }
-            #tree .file { background:url('<?php echo $fm_path_info["basename"]; ?>?action=99&filename=file_sprite.png') 0 0 no-repeat; }
+            #tree .folder { background:url('<?php echo $fm_path_info['basename']; ?>?action=99&filename=file_sprite.png') right bottom no-repeat; }
+            #tree .file { background:url('<?php echo $fm_path_info['basename']; ?>?action=99&filename=file_sprite.png') 0 0 no-repeat; }
             #tree .file-pdf { background-position: -32px 0 }
             #tree .file-as { background-position: -36px 0 }
             #tree .file-c { background-position: -72px -0px }
@@ -2222,7 +2222,7 @@ function dir_list_form() {
             document.getElementById(\"modalIframeWrapper\").style.display = '';
             document.body.style.overflow = 'auto';
             if (modalWindowReloadOnClose) {
-                window.parent.frame3.location.href='".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."';
+                window.parent.frame3.location.href='".$fm_path_info['basename']."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."';
             }
         }
     -->
@@ -2236,90 +2236,90 @@ function dir_list_form() {
         $entry_list = array();
         while (($entry = readdir($opdir)) !== false) {
             if ($entry == "." || $entry == "..") continue;
-            $entry_list[$entry_count]["name"] = $entry;
-            $entry_list[$entry_count]["namet"] = $entry;
-            $entry_list[$entry_count]["size"] = 0;
-            $entry_list[$entry_count]["sizet"] = 0;
-            $entry_list[$entry_count]["type"] = "none";
-            $entry_list[$entry_count]["date"] = date("Ymd", filemtime($fm_current_dir.$entry));
-            $entry_list[$entry_count]["time"] = date("His", filemtime($fm_current_dir.$entry));
-            $entry_list[$entry_count]["datet"] = date($date_format, filemtime($fm_current_dir.$entry));
-            $entry_list[$entry_count]["p"] = substr(sprintf('%o', fileperms($fm_current_dir.$entry)), -4);
-            $entry_list[$entry_count]["u"] = fileowner($fm_current_dir.$entry);
-            $entry_list[$entry_count]["g"] = filegroup($fm_current_dir.$entry);
+            $entry_list[$entry_count]['name'] = $entry;
+            $entry_list[$entry_count]['namet'] = $entry;
+            $entry_list[$entry_count]['size'] = 0;
+            $entry_list[$entry_count]['sizet'] = 0;
+            $entry_list[$entry_count]['type'] = "none";
+            $entry_list[$entry_count]['date'] = date("Ymd", filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]['time'] = date("His", filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]['datet'] = date($date_format, filemtime($fm_current_dir.$entry));
+            $entry_list[$entry_count]['p'] = substr(sprintf('%o', fileperms($fm_current_dir.$entry)), -4);
+            $entry_list[$entry_count]['u'] = fileowner($fm_current_dir.$entry);
+            $entry_list[$entry_count]['g'] = filegroup($fm_current_dir.$entry);
             if ($resolve_ids){
-                $entry_list[$entry_count]["p"] = show_perms(fileperms($fm_current_dir.$entry));
+                $entry_list[$entry_count]['p'] = show_perms(fileperms($fm_current_dir.$entry));
                 if (!$is_windows){
-                    $entry_list[$entry_count]["u"] = get_user_name(fileowner($fm_current_dir.$entry));
-                    $entry_list[$entry_count]["g"] = get_group_name(filegroup($fm_current_dir.$entry));
+                    $entry_list[$entry_count]['u'] = get_user_name(fileowner($fm_current_dir.$entry));
+                    $entry_list[$entry_count]['g'] = get_group_name(filegroup($fm_current_dir.$entry));
                 }
             }
             if (is_link($fm_current_dir.$entry)){
-                $entry_list[$entry_count]["type"] = "link";
-                $entry_list[$entry_count]["target"] = readlink($fm_current_dir.$entry);
-                $entry_list[$entry_count]["target_absolute_path"] = readlink_absolute_path($fm_current_dir.$entry);
-                if (is_dir($entry_list[$entry_count]["target_absolute_path"])) {
-                    $entry_list[$entry_count]["type"] = "dir";
+                $entry_list[$entry_count]['type'] = "link";
+                $entry_list[$entry_count]['target'] = readlink($fm_current_dir.$entry);
+                $entry_list[$entry_count]['target_absolute_path'] = readlink_absolute_path($fm_current_dir.$entry);
+                if (is_dir($entry_list[$entry_count]['target_absolute_path'])) {
+                    $entry_list[$entry_count]['type'] = "dir";
                     $dirsize = phpfm_get_total_size($fm_current_dir.$entry);
-                    $entry_list[$entry_count]["size"] = intval($dirsize);
+                    $entry_list[$entry_count]['size'] = intval($dirsize);
                     if ($dirsize === false) {
                         $sizet = et('GetSize').'..';
                     } elseif ($dirsize === 'error'){
                         $sizet = '<span title="error: too much recursion">'.et('Error').' &#x21bb</span>';
                     } else {
-                        $sizet = format_size($entry_list[$entry_count]["size"]).' &#x21bb';
+                        $sizet = format_size($entry_list[$entry_count]['size']).' &#x21bb';
                     }
-                    $entry_list[$entry_count]["sizet"] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
-                } elseif (is_file($entry_list[$entry_count]["target_absolute_path"])) {
-                    $entry_list[$entry_count]["type"] = "file";
-                    $entry_list[$entry_count]["size"] = phpfm_filesize($fm_current_dir.$entry);
-                    $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
+                    $entry_list[$entry_count]['sizet'] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
+                } elseif (is_file($entry_list[$entry_count]['target_absolute_path'])) {
+                    $entry_list[$entry_count]['type'] = "file";
+                    $entry_list[$entry_count]['size'] = phpfm_filesize($fm_current_dir.$entry);
+                    $entry_list[$entry_count]['sizet'] = format_size($entry_list[$entry_count]['size']);
                     $has_files = true;
                 } else {
-                    $entry_list[$entry_count]["type"] = "broken_link";
-                    $entry_list[$entry_count]["date"] = '';
-                    $entry_list[$entry_count]["time"] = '';
-                    $entry_list[$entry_count]["datet"] = '';
-                    $entry_list[$entry_count]["size"] = 0;
-                    $entry_list[$entry_count]["sizet"] = '';
-                    $entry_list[$entry_count]["p"] = '';
+                    $entry_list[$entry_count]['type'] = "broken_link";
+                    $entry_list[$entry_count]['date'] = '';
+                    $entry_list[$entry_count]['time'] = '';
+                    $entry_list[$entry_count]['datet'] = '';
+                    $entry_list[$entry_count]['size'] = 0;
+                    $entry_list[$entry_count]['sizet'] = '';
+                    $entry_list[$entry_count]['p'] = '';
                 }
-                $entry_list[$entry_count]["linkt"] = '<span style="float:right; margin-top:3px; font-weight:bold;" title="symlink to '.$entry_list[$entry_count]["target"].'">(L)</span>';
+                $entry_list[$entry_count]['linkt'] = '<span style="float:right; margin-top:3px; font-weight:bold;" title="symlink to '.$entry_list[$entry_count]['target'].'">(L)</span>';
                 $ext = lowercase(strrchr($entry,"."));
                 if (strstr($ext,".")){
-                    $entry_list[$entry_count]["ext"] = $ext;
-                    $entry_list[$entry_count]["extt"] = $ext;
+                    $entry_list[$entry_count]['ext'] = $ext;
+                    $entry_list[$entry_count]['extt'] = $ext;
                 } else {
-                    $entry_list[$entry_count]["ext"] = "";
-                    $entry_list[$entry_count]["extt"] = "&nbsp;";
+                    $entry_list[$entry_count]['ext'] = "";
+                    $entry_list[$entry_count]['extt'] = "&nbsp;";
                 }
             } elseif (is_file($fm_current_dir.$entry)){
                 $ext = lowercase(strrchr($entry,"."));
-                $entry_list[$entry_count]["type"] = "file";
-                $entry_list[$entry_count]["size"] = phpfm_filesize($fm_current_dir.$entry);
-                $entry_list[$entry_count]["sizet"] = format_size($entry_list[$entry_count]["size"]);
+                $entry_list[$entry_count]['type'] = "file";
+                $entry_list[$entry_count]['size'] = phpfm_filesize($fm_current_dir.$entry);
+                $entry_list[$entry_count]['sizet'] = format_size($entry_list[$entry_count]['size']);
                 if (strstr($ext,".")){
-                    $entry_list[$entry_count]["ext"] = $ext;
-                    $entry_list[$entry_count]["extt"] = $ext;
+                    $entry_list[$entry_count]['ext'] = $ext;
+                    $entry_list[$entry_count]['extt'] = $ext;
                 } else {
-                    $entry_list[$entry_count]["ext"] = "";
-                    $entry_list[$entry_count]["extt"] = "&nbsp;";
+                    $entry_list[$entry_count]['ext'] = "";
+                    $entry_list[$entry_count]['extt'] = "&nbsp;";
                 }
                 $has_files = true;
             } elseif (is_dir($fm_current_dir.$entry)) {
-                $entry_list[$entry_count]["type"] = "dir";
+                $entry_list[$entry_count]['type'] = "dir";
                 $dirsize = phpfm_get_total_size($fm_current_dir.$entry);
-                $entry_list[$entry_count]["size"] = intval($dirsize);
+                $entry_list[$entry_count]['size'] = intval($dirsize);
                 if ($dirsize === false){
                     $sizet = et('GetSize').'..';
                 } elseif ($dirsize === 'error') {
                     $sizet = '<span title="error: too much recursion">'.et('Error').' &#x21bb</span>';
                 } else {
-                    $sizet = format_size($entry_list[$entry_count]["size"]).' &#x21bb';
+                    $sizet = format_size($entry_list[$entry_count]['size']).' &#x21bb';
                 }
-                $entry_list[$entry_count]["sizet"] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
+                $entry_list[$entry_count]['sizet'] = "<a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:dir_list_update_total_size('".addslashes($entry)."','dir".$entry_count."size')\"><span id=\"dir".$entry_count."size\">".$sizet."</span></a>";
             }
-            $total_size += $entry_list[$entry_count]["size"];
+            $total_size += $entry_list[$entry_count]['size'];
             $entry_count++;
         }
         @closedir($opdir);
@@ -2353,10 +2353,10 @@ function dir_list_form() {
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
     function go_dir_list(arg) {
-        document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."'+encodeURIComponent(arg)+'".addslashes(DIRECTORY_SEPARATOR)."';
+        document.location.href='".addslashes($fm_path_info['basename'])."?frame=3&fm_current_dir=".rawurlencode($fm_current_dir)."'+encodeURIComponent(arg)+'".addslashes(DIRECTORY_SEPARATOR)."';
     }
     function resolve_ids() {
-        document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&set_resolve_ids=".($resolve_ids?'0':'1')."&fm_current_dir=".rawurlencode($fm_current_dir)."';
+        document.location.href='".addslashes($fm_path_info['basename'])."?frame=3&set_resolve_ids=".($resolve_ids?'0':'1')."&fm_current_dir=".rawurlencode($fm_current_dir)."';
     }
     var entry_list = new Array();
     // Custom object constructor
@@ -2369,7 +2369,7 @@ function dir_list_form() {
     }
     // Declare entry_list for selection procedures";
     foreach ($entry_list as $i=>$data){
-        $out .= "\n\tentry_list['entry$i'] = new entry('".addslashes($data["name"])."', '".$data["type"]."', '".$data["p"]."', '".$data["size"]."', false);";
+        $out .= "\n\tentry_list['entry$i'] = new entry('".addslashes($data['name'])."', '".$data['type']."', '".$data['p']."', '".$data['size']."', false);";
     }
     $out .= "
     function dir_list_update_total_size(dirname,id){
@@ -2379,7 +2379,7 @@ function dir_list_form() {
         }
         $.ajax({
             type: 'GET',
-            url: '".$fm_path_info["basename"]."?action=14&dirname='+encodeURIComponent(dirname)+'&fm_current_dir=".rawurlencode($fm_current_dir)."',
+            url: '".$fm_path_info['basename']."?action=14&dirname='+encodeURIComponent(dirname)+'&fm_current_dir=".rawurlencode($fm_current_dir)."',
             dataType: 'text',
             crossDomain: false,
             success: function (data){
@@ -2646,31 +2646,31 @@ function dir_list_form() {
         return true;
     }
     function upload_form(){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',true);
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=10&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Upload')."',true);
     }
     function edit_file_form(arg){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." ".addslashes($fm_current_dir)."'+(arg));
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=7&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Edit')." ".addslashes($fm_current_dir)."'+(arg));
     }
     function config_form(){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=2','".et('Configurations')."');
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=2','".et('Configurations')."');
     }
     function server_info_form(arg){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=5','".et('ServerInfo')."');
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=5','".et('ServerInfo')."');
     }
     function shell_form(){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',true);
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=9&fm_current_dir=".rawurlencode($fm_current_dir)."','".et('Shell')."',true);
     }
     function portscan_form(){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=12','".et('Portscan')."');
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=12','".et('Portscan')."');
     }
     function about_form(){
         toogleModalWindow('//www.dulldusk.com/phpfm?version=".$version."','".et('About')." - ".et("FileMan")." - ".et('Version')." ".$version."');
     }
     function view_form(arg){
-        toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg));
+        toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et("View")." '+(arg));
     }
     function download_entry(arg){
-        parent.frame1.location.href='".addslashes($fm_path_info["basename"])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
+        parent.frame1.location.href='".addslashes($fm_path_info['basename'])."?action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg);
     }
     function decompress_entry(arg){
         if(confirm('".uppercase(et('Decompress'))." \\''+arg+'\\' ?')) {
@@ -2681,15 +2681,15 @@ function dir_list_form() {
     }
     function execute_entry(arg){
         if(confirm('".et('ConfExec')." \\''+arg+'\\' ?')) {
-            toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg));
+            toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=11&fm_current_dir=".rawurlencode($fm_current_dir)."&filename='+encodeURIComponent(arg),'".et('Exec')." '+(arg));
         }
     }
     function delete_entry(arg){
-        if(confirm('".uppercase(et('Rem'))." \\''+arg+'\\' ?')) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=8&cmd_arg='+encodeURIComponent(arg)+'&fm_current_dir=".rawurlencode($fm_current_dir)."';
+        if(confirm('".uppercase(et('Rem'))." \\''+arg+'\\' ?')) document.location.href='".addslashes($fm_path_info['basename'])."?frame=3&action=8&cmd_arg='+encodeURIComponent(arg)+'&fm_current_dir=".rawurlencode($fm_current_dir)."';
     }
     function rename_entry(arg){
         var nome = '';
-        if (nome = prompt('".uppercase(et('Ren'))." \\''+arg+'\\' ".et('To')." ...',arg)) document.location.href='".addslashes($fm_path_info["basename"])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
+        if (nome = prompt('".uppercase(et('Ren'))." \\''+arg+'\\' ".et('To')." ...',arg)) document.location.href='".addslashes($fm_path_info['basename'])."?frame=3&action=3&fm_current_dir=".rawurlencode($fm_current_dir)."&old_name='+encodeURIComponent(arg)+'&new_name='+encodeURIComponent(nome);
     }
     function set_dir_dest(arg){
         document.form_action.dir_dest.value = arg;
@@ -2728,7 +2728,7 @@ function dir_list_form() {
         cancel_copy_move();
         if (!is_anything_selected()) set_dir_list_warn('".et('NoSel')."...');
         else {
-            toogleModalWindow('".addslashes($fm_path_info["basename"])."?action=8&chmod_arg='+encodeURIComponent(document.form_action.chmod_arg.value),'".et('Perms')."');
+            toogleModalWindow('".addslashes($fm_path_info['basename'])."?action=8&chmod_arg='+encodeURIComponent(document.form_action.chmod_arg.value),'".et('Perms')."');
             document.form_action.dir_dest.value='';
             document.form_action.chmod_arg.value='';
         }
@@ -2862,7 +2862,7 @@ function dir_list_form() {
     <table class=\"table\">
         <tr style=\"border-bottom: 2px solid #eaeaea;\">
         <td bgcolor=\"#DDDDDD\" colspan=50><nobr>
-        <form action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
+        <form action=\"".$fm_path_info['basename']."\" method=\"post\" onsubmit=\"return test_action();\">
             <div class=\"float-left\">
                 <button type=\"button\" class=\"btn\" onclick=\"config_form()\"><i class=\"fa fa-settings\"></i> " . et('Config') . "</button>
                 <button type=\"button\" class=\"btn\" onclick=\"server_info_form()\" value=\"" . et('ServerInfo') . "\"><i class=\"fa fa-lunix\"></i> " . et('ServerInfo') . "</button>
@@ -2879,7 +2879,7 @@ function dir_list_form() {
         </td>
         </tr>";
     $out .= "
-    <form name=\"form_action\" action=\"".$fm_path_info["basename"]."\" method=\"post\" onsubmit=\"return test_action();\">
+    <form name=\"form_action\" action=\"".$fm_path_info['basename']."\" method=\"post\" onsubmit=\"return test_action();\">
         <input type=hidden name=\"frame\" value=3>
         <input type=hidden name=\"action\" value=0>
         <input type=hidden name=\"dir_dest\" value=\"\">
@@ -2903,7 +2903,7 @@ function dir_list_form() {
             }
             $breadcrumbs = implode('<i class="bdc-link">'.DIRECTORY_SEPARATOR.'</i>',$breadcrumbs);
         }
-        if (strlen($uplink)) $uplink = "<a href=\"".$fm_path_info["basename"]."?frame=3&fm_current_dir=".rawurlencode($uplink)."\">🡹</a>&nbsp;&nbsp;";
+        if (strlen($uplink)) $uplink = "<a href=\"".$fm_path_info['basename']."?frame=3&fm_current_dir=".rawurlencode($uplink)."\">🡹</a>&nbsp;&nbsp;";
         return $uplink.$breadcrumbs;
     }
     function get_link_breadcrumbs($path){
@@ -2957,8 +2957,8 @@ function dir_list_form() {
             $file_out = array();
             $max_cells = 0;
             foreach ($entry_list as $ind=>$dir_entry) {
-                $file = $dir_entry["name"];
-                if ($dir_entry["type"] == "dir") {
+                $file = $dir_entry['name'];
+                if ($dir_entry['type'] == "dir") {
                     $dir_out[$dir_count] = array();
                     $dir_out[$dir_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
@@ -2966,18 +2966,18 @@ function dir_list_form() {
                             <table class=\"entry_name_table\">
                             <tr>
                                 <td width=\"1\"><span class=\"fa fa-folder\"></span></td>
-                                <td class=\"entry_name\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:go_dir_list('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></td>
-                                <td align=\"right\">".utf8_convert($dir_entry["linkt"])."</td>
+                                <td class=\"entry_name\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:go_dir_list('".addslashes($file)."')\">".utf8_convert($dir_entry['namet'])."</a></td>
+                                <td align=\"right\">".utf8_convert($dir_entry['linkt'])."</td>
                             </tr>
                             </table>
                         </td>";
-                    $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["p"]."</td>";
+                    $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry['p']."</td>";
                     if (!$is_windows) {
-                        $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["u"]."</nobr></td>";
-                        $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["g"]."</nobr></td>";
+                        $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry['u']."</nobr></td>";
+                        $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry['g']."</nobr></td>";
                     }
-                    $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["sizet"]."</nobr></td>";
-                    $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry["datet"]."</nobr></td>";
+                    $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry['sizet']."</nobr></td>";
+                    $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>".$dir_entry['datet']."</nobr></td>";
                     if ($has_files) $dir_out[$dir_count][] = "<td class=\"sm\"><nobr>Folder</td>";
                     // Directory Actions
                     if ( is_writable($fm_current_dir.$file) ) $dir_out[$dir_count][] = "
@@ -2990,27 +2990,27 @@ function dir_list_form() {
                         $max_cells = count($dir_out[$dir_count]);
                     }
                     $dir_count++;
-                } elseif ($dir_entry["type"] == "file") {
+                } elseif ($dir_entry['type'] == "file") {
                     $file_out[$file_count] = array();
                     $file_out[$file_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
                         <td class=\"sm\">
                             <table class=\"entry_name_table\">
                             <tr>
-                                <td width=\"1\"><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span></td>
-                                <td class=\"entry_name\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:download_entry('".addslashes($file)."')\">".utf8_convert($dir_entry["namet"])."</a></td>
-                                <td align=\"right\">".utf8_convert($dir_entry["linkt"])."</td>
+                                <td width=\"1\"><span class=\"".get_file_icon_class($fm_path_info['basename'].$file)."\"></span></td>
+                                <td class=\"entry_name\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"Javascript:download_entry('".addslashes($file)."')\">".utf8_convert($dir_entry['namet'])."</a></td>
+                                <td align=\"right\">".utf8_convert($dir_entry['linkt'])."</td>
                             </tr>
                             </table>
                         </td>";
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["p"]."</td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['p']."</td>";
                     if (!$is_windows) {
-                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["u"]."</nobr></td>";
-                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["g"]."</nobr></td>";
+                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['u']."</nobr></td>";
+                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['g']."</nobr></td>";
                     }
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["sizet"]."</nobr></td>";
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["datet"]."</nobr></td>";
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["extt"]."</td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['sizet']."</nobr></td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['datet']."</nobr></td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['extt']."</td>";
                     // File Actions
                     if ( is_writable($fm_current_dir.$file) ) $file_out[$file_count][] = "
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:delete_entry('".addslashes($file)."')\">".et('Rem')."</a></td>";
@@ -3024,10 +3024,10 @@ function dir_list_form() {
                     if ( is_readable($fm_current_dir.$file) ) $file_out[$file_count][] = "
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:view_form('".addslashes($file)."');\">".et('View')."</a></td>";
                     else $file_out[$file_count][] = "<td class=\"sm\">&nbsp;</td>";
-                    if ( is_readable($fm_current_dir.$file) && strlen($dir_entry["ext"]) && (strpos(".tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry["ext"]."#" ) !== false) ) $file_out[$file_count][] = "
+                    if ( is_readable($fm_current_dir.$file) && strlen($dir_entry['ext']) && (strpos(".tar#.zip#.bz2#.tbz2#.bz#.tbz#.bzip#.gzip#.gz#.tgz#", $dir_entry['ext']."#" ) !== false) ) $file_out[$file_count][] = "
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:decompress_entry('".addslashes($file)."')\">".et('Decompress')."</a></td>";
                     else $file_out[$file_count][] = "<td class=\"sm\">&nbsp;</td>";
-                    if ( is_executable($fm_current_dir.$file) || (strlen($dir_entry["ext"]) && (strpos(".exe#.com#.bat#.sh#.py#.pl", $dir_entry["ext"]."#" ) !== false)) ) $file_out[$file_count][] = "
+                    if ( is_executable($fm_current_dir.$file) || (strlen($dir_entry['ext']) && (strpos(".exe#.com#.bat#.sh#.py#.pl", $dir_entry['ext']."#" ) !== false)) ) $file_out[$file_count][] = "
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:execute_entry('".addslashes($file)."')\">".et('Exec')."</a></td>";
                     else $file_out[$file_count][] = "<td class=\"sm\">&nbsp;</td>";
                     //$file_out[$file_count][] = "<td class=\"sm\">".(is_readable_phpfm($fm_current_dir.$file)?'<font color=green>R</font>':'<font color=red>R</font>').(is_writable_phpfm($fm_current_dir.$file)?'<font color=green>W</font>':'<font color=red>W</font>').(is_executable_phpfm($fm_current_dir.$file)?'<font color=green>X</font>':'<font color=red>X</font>')."</td>";
@@ -3035,27 +3035,27 @@ function dir_list_form() {
                         $max_cells = count($file_out[$file_count]);
                     }
                     $file_count++;
-                } elseif ($dir_entry["type"] == "broken_link") {
+                } elseif ($dir_entry['type'] == "broken_link") {
                     $file_out[$file_count] = array();
                     $file_out[$file_count][] = "
                         <tr ID=\"entry$ind\" class=\"entryUnselected\" onmouseover=\"selectEntry(this, 'over');\" onmousedown=\"selectEntry(this, 'click');\">
                         <td class=\"sm\">
                             <table class=\"entry_name_table\">
                             <tr>
-                                <td width=\"1\"><span class=\"".get_file_icon_class($fm_path_info["basename"].$file)."\"></span></td>
-                                <td class=\"entry_name\"><font color=\"red\"><b>".utf8_convert($dir_entry["namet"])."</b></font></td>
-                                <td align=\"right\"><font color=\"red\"><b>".utf8_convert($dir_entry["linkt"])."</b></font></td>
+                                <td width=\"1\"><span class=\"".get_file_icon_class($fm_path_info['basename'].$file)."\"></span></td>
+                                <td class=\"entry_name\"><font color=\"red\"><b>".utf8_convert($dir_entry['namet'])."</b></font></td>
+                                <td align=\"right\"><font color=\"red\"><b>".utf8_convert($dir_entry['linkt'])."</b></font></td>
                             </tr>
                             </table>
                         </td>";
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["p"]."</td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['p']."</td>";
                     if (!$is_windows) {
-                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["u"]."</nobr></td>";
-                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["g"]."</nobr></td>";
+                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['u']."</nobr></td>";
+                        $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['g']."</nobr></td>";
                     }
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["sizet"]."</nobr></td>";
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["datet"]."</nobr></td>";
-                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry["extt"]."</td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['sizet']."</nobr></td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['datet']."</nobr></td>";
+                    $file_out[$file_count][] = "<td class=\"sm\"><nobr>".$dir_entry['extt']."</td>";
                     // File Actions
                     $file_out[$file_count][] = "
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:delete_entry('".addslashes($file)."')\">".et('Rem')."</a></td>";
@@ -3069,16 +3069,16 @@ function dir_list_form() {
             }
             $out .= "
             <tr>
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or1&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Name')."</a></nobr></th>
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or2&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Perm')."</a></nobr></th>";
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or1&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Name')."</a></nobr></th>
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or2&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Perm')."</a></nobr></th>";
             if (!$is_windows) $out .= "
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or3&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Owner')."</a></th>
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or4&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Group')."</a></nobr></th>";
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or3&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Owner')."</a></th>
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or4&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Group')."</a></nobr></th>";
             $out .= "
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or5&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Size')."</a></nobr></th>
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or6&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Date')."</a></nobr></th>";
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or5&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Size')."</a></nobr></th>
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or6&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Date')."</a></nobr></th>";
             if ($file_count) $out .= "
-                  <th><nobr><a href=\"".$fm_path_info["basename"]."?frame=3&or_by=$or7&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Type')."</a></nobr></th>";
+                  <th><nobr><a href=\"".$fm_path_info['basename']."?frame=3&or_by=$or7&fm_current_dir=".rawurldecode($fm_current_dir)."\">".et('Type')."</a></nobr></th>";
             $out .= "
                   <th colspan=50>&nbsp;</nobr></th>
             </tr>";
@@ -3164,7 +3164,7 @@ function upload_form(){
     if (count($_FILES)==0){
         echo "
         <table height=\"100%\" border=0 cellspacing=0 cellpadding=2 style=\"padding:5px;\">
-        <form name=\"upload_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" ENCTYPE=\"multipart/form-data\">
+        <form name=\"upload_form\" action=\"".$fm_path_info['basename']."\" method=\"post\" ENCTYPE=\"multipart/form-data\">
         <input type=hidden name=dir_dest value=\"".$fm_current_dir."\">
         <input type=hidden name=action value=10>
         <tr><td colspan=2 align=left><nobr><b>".et('Destination').": ".$fm_current_dir."</b></nobr></td></tr>
@@ -3229,8 +3229,8 @@ function upload_form(){
         }
         $i=1;
         foreach ($files as $file) {
-            $filename = $file["name"];
-            $temp_file = $file["tmp_name"];
+            $filename = $file['name'];
+            $temp_file = $file['tmp_name'];
             if (strlen($filename)) {
                 $resul = save_upload($temp_file,$filename,$dir_dest);
                 switch($resul){
@@ -3690,13 +3690,13 @@ function view_form(){
         $title = et("View").' '.addslashes($filename);
         $is_reachable_thru_webserver = (stristr($fm_current_dir,$doc_root)!==false);
         if ($is_reachable_thru_webserver){
-            $url  = $url_info["scheme"]."://".$url_info["host"];
-            if (strlen($url_info["port"])) $url .= ":".$url_info["port"];
+            $url  = $url_info['scheme']."://".$url_info['host'];
+            if (strlen($url_info['port'])) $url .= ":".$url_info['port'];
             $url .= str_replace(DIRECTORY_SEPARATOR,'/',str_replace($doc_root,'',$fm_current_dir));
             $url .= $filename;
             $title = et("View").' '.$url;
         } else {
-            $url  = addslashes($fm_path_info["basename"]);
+            $url  = addslashes($fm_path_info['basename']);
             $url .= "?action=4&fm_current_dir=".rawurlencode($fm_current_dir)."&filename=".rawurldecode($filename)."&passthru=1";
             $title = et("View").' '.addslashes($fm_current_dir.$filename);
         }
@@ -3811,13 +3811,13 @@ function edit_file_form(){
         //$file_data = chunk_split($file_data,2,"\\x");
         //$file_data = "\\x".substr($file_data,0,-2);
     }
-    //<link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=prism.css\" media=\"screen\" />
+    //<link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info['basename']."?action=99&filename=prism.css\" media=\"screen\" />
     html_header("
-        <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery-1.11.1.min.js\"></script>
-        <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=ace.js\"></script>
+        <script type=\"text/javascript\" src=\"".$fm_path_info['basename']."?action=99&filename=jquery-1.11.1.min.js\"></script>
+        <script type=\"text/javascript\" src=\"".$fm_path_info['basename']."?action=99&filename=ace.js\"></script>
     ");
     echo "<body marginwidth=\"0\" marginheight=\"0\">
-    <form name=\"edit_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\">
+    <form name=\"edit_form\" action=\"".$fm_path_info['basename']."\" method=\"post\">
         <input type=hidden name=\"action\" value=\"7\">
         <input type=hidden name=\"fm_current_dir\" value=\"".$fm_current_dir."\">
         <input type=hidden name=\"filename\" value=\"".$filename."\">
@@ -3893,7 +3893,7 @@ function edit_file_form(){
     <div id=\"div_ace_editor\">".html_encode($file_data)."</div>
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
-        ace.config.set('basePath', '".$fm_path_info["basename"]."?action=99&filename=');
+        ace.config.set('basePath', '".$fm_path_info['basename']."?action=99&filename=');
         ace.require(\"ace/ext/whitespace\");
         var editor = ace.edit('div_ace_editor');
         editor.setOptions({
@@ -4004,14 +4004,14 @@ function config_form(){
             $reload = true;
         break;
     }
-    html_header('<script type="text/javascript" src="'.$fm_path_info["basename"].'?action=99&filename=jquery-1.11.1.min.js"></script>');
+    html_header('<script type="text/javascript" src="'.$fm_path_info['basename'].'?action=99&filename=jquery-1.11.1.min.js"></script>');
     echo "<body marginwidth=\"0\" marginheight=\"0\">\n";
     if ($reload){
         echo "
         <script language=\"Javascript\" type=\"text/javascript\">
         <!--
             window.setTimeout(function(){
-                window.parent.parent.document.location.href='".$fm_path_info["basename"]."?fm_current_dir=".rawurlencode($fm_current_dir)."';
+                window.parent.parent.document.location.href='".$fm_path_info['basename']."?fm_current_dir=".rawurlencode($fm_current_dir)."';
             },500);
         //-->
         </script>";
@@ -4096,7 +4096,7 @@ function config_form(){
         ]');
         echo "
         <table border=0 cellspacing=0 cellpadding=5 align=left style=\"padding:5px;\">
-        <form name=\"config_form\" action=\"".$fm_path_info["basename"]."\" method=\"post\" autocomplete=\"off\">
+        <form name=\"config_form\" action=\"".$fm_path_info['basename']."\" method=\"post\" autocomplete=\"off\">
         <input type=hidden name=action value=2>
         <input type=hidden name=config_action value=0>
         <tr><td align=right width=1>".et('FileMan').":<td>".et('Version')." ".$version." (".format_size(phpfm_filesize($fm_file)).")</td></tr>
@@ -4304,7 +4304,7 @@ function portscan_form(){
             die();
         break;
     }
-    html_header('<script type="text/javascript" src="'.$fm_path_info["basename"].'?action=99&filename=jquery-1.11.1.min.js"></script>');
+    html_header('<script type="text/javascript" src="'.$fm_path_info['basename'].'?action=99&filename=jquery-1.11.1.min.js"></script>');
     $m = explode(".",$lan_ip);
     $inet = $m[0].".".$m[1].".".$m[2].".";
     if (!strlen($portscan_ip_range)) $portscan_ip_range = $inet."1-254";
@@ -4357,7 +4357,7 @@ function portscan_form(){
     </style>
     <div id=\"div_toolbar\">
         <table border=0 cellspacing=0 cellpadding=5 align=center width=\"100%\" height=\"100%\">
-        <form name=\"portscan_form\" action=\"".$fm_path_info["basename"]."\" method=\"get\" target=\"portscanIframe\">
+        <form name=\"portscan_form\" action=\"".$fm_path_info['basename']."\" method=\"get\" target=\"portscanIframe\">
             <input type=hidden name=action value=12>
             <input type=hidden name=portscan_action value=0>
             <tr><td valign=top width=1>
@@ -4483,7 +4483,7 @@ function portscan_form(){
                     iframe_scroll_down();
                     $.ajax({
                         type: 'POST',
-                        url: '".$fm_path_info["basename"]."',
+                        url: '".$fm_path_info['basename']."',
                         dataType: 'json',
                         crossDomain: false,
                         data: {
@@ -4524,7 +4524,7 @@ function portscan_form(){
             ip = portscan_ips[portscan_curr_ip];
             if (all_ports_one_request){
                 $.get(
-                    '".$fm_path_info["basename"]."',
+                    '".$fm_path_info['basename']."',
                     {
                         action : 12,
                         portscan_action: 4,
@@ -4547,7 +4547,7 @@ function portscan_form(){
                     iframe_scroll_down();
                     $.ajax({
                         type: 'POST',
-                        url: '".$fm_path_info["basename"]."',
+                        url: '".$fm_path_info['basename']."',
                         dataType: 'json',
                         crossDomain: false,
                         data: {
@@ -4665,14 +4665,14 @@ function extract_id() {
 }
 function currentURL() {
     $pageURL = 'http';
-    if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == "on") {
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") {
         $pageURL .= "s";
     }
     $pageURL .= "://";
-    if ($_SERVER["SERVER_PORT"] != "80") {
-        $pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
+    if ($_SERVER['SERVER_PORT'] != "80") {
+        $pageURL .= $_SERVER['SERVER_NAME'].":".$_SERVER['SERVER_PORT'].$_SERVER['REQUEST_URI'];
     } else {
-        $pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+        $pageURL .= $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
     }
     return $pageURL;
 }
@@ -4947,9 +4947,9 @@ function shell_form(){
         break;
         default:
             html_header("
-                <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery-1.11.1.min.js\"></script>
-                <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery.terminal.min.js\"></script>
-                <link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info["basename"]."?action=99&filename=jquery.terminal.min.css\" media=\"screen\" />
+                <script type=\"text/javascript\" src=\"".$fm_path_info['basename']."?action=99&filename=jquery-1.11.1.min.js\"></script>
+                <script type=\"text/javascript\" src=\"".$fm_path_info['basename']."?action=99&filename=jquery.terminal.min.js\"></script>
+                <link rel=\"stylesheet\" type=\"text/css\" href=\"".$fm_path_info['basename']."?action=99&filename=jquery.terminal.min.css\" media=\"screen\" />
             ");
             is_rwx_phpfm(__FILE__); // Init $GLOBALS['script_info']
             $username = $GLOBALS['script_info']['script_user_name'];
@@ -5021,7 +5021,7 @@ function shell_form(){
                                     var timestamp = new Date().getTime();
                                     $.ajax({
                                         type: 'POST',
-                                        url: '<?php echo $fm_path_info["basename"]; ?>?action=9&shell_form=1&fm_current_dir='+shell_current_dir,
+                                        url: '<?php echo $fm_path_info['basename']; ?>?action=9&shell_form=1&fm_current_dir='+shell_current_dir,
                                         dataType: 'json',
                                         crossDomain: false,
                                         data: JSON.stringify(
@@ -5149,7 +5149,7 @@ function logout(){
     echo "
     <script language=\"Javascript\" type=\"text/javascript\">
     <!--
-        window.parent.document.location.href='".$fm_path_info["basename"]."';
+        window.parent.document.location.href='".$fm_path_info['basename']."';
     //-->
     </script>";
 }
@@ -5157,9 +5157,9 @@ function login(){
     global $pass,$auth_pass,$fm_path_info;
     if (md5(trim($pass)) == $auth_pass){
         setcookie("loggedon",$auth_pass,0,"/");
-        header ("Location: ".$fm_path_info["basename"]);
+        header ("Location: ".$fm_path_info['basename']);
         return true;
-    } else header ("Location: ".$fm_path_info["basename"]."?erro=1");
+    } else header ("Location: ".$fm_path_info['basename']."?erro=1");
     return false;
 }
 function login_form(){
@@ -5175,12 +5175,12 @@ function login_form(){
         </table>
         <script language=\"Javascript\" type=\"text/javascript\">
         <!--
-            window.parent.document.location.href='".$fm_path_info["basename"]."';
+            window.parent.document.location.href='".$fm_path_info['basename']."';
         //-->
         </script>";
     } else {
         echo "
-        <form class=\"form-signin noScriptHidden mt-4\" name=\"login_form\" action=\"" . $fm_path_info["basename"] . "\" method=\"post\">
+        <form class=\"form-signin noScriptHidden mt-4\" name=\"login_form\" action=\"" . $fm_path_info['basename'] . "\" method=\"post\">
             <h2 class=\"form-signin-heading text-center\">".et('FileMan')."</h2>
             <input type=\"password\" class=\"form-control\" name=\"pass\" placeholder=\"".et('Pass')."\" required=\"\"/>
             <button type=\"submit\" class=\"btn noIcon\" style=\"float:right\" value=\"".et('Login')."\">".et('Login')."</button>
@@ -5263,7 +5263,7 @@ function frame3(){
     }
     setcookie("fm_current_dir", $fm_current_dir, 0 , "/");
     html_header("
-        <script type=\"text/javascript\" src=\"".$fm_path_info["basename"]."?action=99&filename=jquery-1.11.1.min.js\"></script>
+        <script type=\"text/javascript\" src=\"".$fm_path_info['basename']."?action=99&filename=jquery-1.11.1.min.js\"></script>
     ");
     echo "<body>\n";
     $GLOBALS['dir_list_warn_message'] = '';
@@ -5524,16 +5524,16 @@ function frameset(){
     if (!isset($leftFrameWidth)) $leftFrameWidth = 300;
     html_header("
     <noscript>
-        <meta http-equiv=\"refresh\" content=\"0;url=".$fm_path_info["basename"]."?noscript=1\">
+        <meta http-equiv=\"refresh\" content=\"0;url=".$fm_path_info['basename']."?noscript=1\">
     </noscript>
     ");
     echo "
     <frameset cols=\"".$leftFrameWidth.",*\" framespacing=\"0\">
         <frameset rows=\"0,*\" framespacing=\"0\" frameborder=\"0\">
-            <frame src=\"".$fm_path_info["basename"]."?frame=1\" name=frame1 border=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"no\">
-            <frame src=\"".$fm_path_info["basename"]."?frame=2\" name=frame2 border=\"0\" marginwidth=\"0\" marginheight=\"0\">
+            <frame src=\"".$fm_path_info['basename']."?frame=1\" name=frame1 border=\"0\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"no\">
+            <frame src=\"".$fm_path_info['basename']."?frame=2\" name=frame2 border=\"0\" marginwidth=\"0\" marginheight=\"0\">
         </frameset>
-        <frame src=\"".$fm_path_info["basename"]."?frame=3\" name=frame3 border=\"0\" marginwidth=\"0\" marginheight=\"0\">
+        <frame src=\"".$fm_path_info['basename']."?frame=3\" name=frame3 border=\"0\" marginwidth=\"0\" marginheight=\"0\">
     </frameset>
     </html>";
 }
@@ -7923,8 +7923,8 @@ function get_base64_file(){
             header("Content-Disposition: inline; filename=\"".basename($filename)."\"");
             $data = gzuncompress(base64_decode($base64_files[$filename]));
             if ($filename == 'jstree.style.min.css') {
-                $data = str_replace('32px.png', $fm_path_info["basename"].'?action=99&filename=32px.png', $data);
-                $data = str_replace('throbber.gif', $fm_path_info["basename"].'?action=99&filename=throbber.gif', $data);
+                $data = str_replace('32px.png', $fm_path_info['basename'].'?action=99&filename=32px.png', $data);
+                $data = str_replace('throbber.gif', $fm_path_info['basename'].'?action=99&filename=throbber.gif', $data);
             }
             echo $data;
         }
