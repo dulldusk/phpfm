@@ -4116,22 +4116,22 @@ function config_form(){
         <tr><td align=right width=1>".et('DateFormat').":<td><input type=\"text\" style=\"width:392px; padding:5px 8px;\" id=\"newdateformat\" name=\"newdateformat\" readonly autocomplete=\"off\" value=\"".html_encode($date_format)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\"></td></tr>
         <tr><td align=right>".et('Lang').":<td>
             <select name=newlang id=newlang style=\"width:410px; padding:5px;\">
-                <option value=''>System Default
-                <option value='ca'>Catalan - by Pere Borràs AKA @Norl
-                <option value='cn'>Chinese - by Wen.Xin
-                <option value='nl'>Dutch - by Leon Buijs
-                <option value='en'>English - by Fabricio Seger Kolling
-                <option value='fr'>French - by Jean Bilwes
-                <option value='de'>German - by Guido Ogrzal
-                <option value='it'>Italian - by Valerio Capello
-                <option value='ko'>Korean - by Airplanez
-                <option value='fa'>Persian/Dari - by Opensecure
-                <option value='pt'>Portuguese - by Fabricio Seger Kolling
-                <option value='pl'>Polish - by Jakub Kocój
-                <option value='es'>Spanish - by Sh Studios
-                <option value='ru'>Russian - by Евгений Рашев, Алексей Гаврюшин
-                <option value='tr'>Turkish - by Necdet Yazilimlari
-                <option value='ua'>Ukrainian - by Андрій Литвин
+                <option value=''>System Default</option>
+                <option value='ca'>Catalan - by Pere Borràs AKA @Norl</option>
+                <option value='cn'>Chinese - by Wen.Xin</option>
+                <option value='nl'>Dutch - by Leon Buijs</option>
+                <option value='en'>English - by Fabricio Seger Kolling</option>
+                <option value='fr'>French - by Jean Bilwes</option>
+                <option value='de'>German - by Guido Ogrzal</option>
+                <option value='it'>Italian - by Valerio Capello</option>
+                <option value='ko'>Korean - by Airplanez</option>
+                <option value='fa'>Persian/Dari - by Opensecure, Max Base</option>
+                <option value='pt'>Portuguese - by Fabricio Seger Kolling</option>
+                <option value='pl'>Polish - by Jakub Kocój</option>
+                <option value='es'>Spanish - by Sh Studios</option>
+                <option value='ru'>Russian - by Евгений Рашев, Алексей Гаврюшин</option>
+                <option value='tr'>Turkish - by Necdet Yazilimlari</option>
+                <option value='ua'>Ukrainian - by Андрій Литвин</option>
             </select>
         </td></tr>
         <tr><td align=right>".et('ErrorReport').":<td>
@@ -7848,7 +7848,7 @@ function et($tag){
     $et['en']['Error'] = 'Error';
     $et['fa']['Name'] = 'نام';
     $et['fa']['And'] = 'و';
-    $et['fa']['Enter'] = 'دخول';
+    $et['fa']['Enter'] = 'وارد شدن';
     $et['fa']['Send'] = 'ارسال';
     $et['fa']['Refresh'] = 'تازه سازی';
     $et['fa']['SaveConfig'] = 'ذخیره تنظیمات';
@@ -7875,8 +7875,8 @@ function et($tag){
     $et['fa']['ExecCmd'] = 'احرای دستور';
     $et['fa']['Upload'] = 'بارگذاری';
     $et['fa']['UploadEnd'] = 'اتمام بارگذاری';
-    $et['fa']['Perm'] = 'Perm';
-    $et['fa']['Perms'] = 'دسترسی';
+    $et['fa']['Perm'] = 'دسترسی';
+    $et['fa']['Perms'] = 'دسترسی ها';
     $et['fa']['Owner'] = 'مالک';
     $et['fa']['Group'] = 'گروه';
     $et['fa']['Other'] = 'متفقره';
@@ -7917,7 +7917,7 @@ function et($tag){
     $et['fa']['ConfRem'] = 'تایید برای پاک کردن';
     $et['fa']['EmptyDir'] = 'فولدر خالی';
     $et['fa']['IOError'] = 'خطای I/O';
-    $et['fa']['FileMan'] = 'PHP File Manager';
+    $et['fa']['FileMan'] = 'مدیریت فایل پی اچ پی';
     $et['fa']['InvPass'] = 'رمز اشتباه';
     $et['fa']['ReadDenied'] = 'عدم دسترسی خواند';
     $et['fa']['FileNotFound'] = 'فایل پیدا نشد';
