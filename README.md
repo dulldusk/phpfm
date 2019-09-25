@@ -1,5 +1,8 @@
 # PHP Filesystem Management Tool
+
 https://sourceforge.net/projects/phpfm/
+
+![phpFileManager - Demo](https://www.dulldusk.com/assets/files/phpfm/ss1.7.2.png)
 
 phpFileManager is a complete filesystem management tool on a single file.
 
@@ -21,7 +24,7 @@ Feel free to mess around! This is a public demo installation, and will reset its
 - password protection
 - works on linux/mac/windows
 - php4/php5/php6/php7 compatible
-- translations included for english/portuguese/spanish/catalan/chinese/dutch/french/german/italian/korean/russian/polish/turkish/ukrainian
+- translations included for english/portuguese/spanish/catalan/chinese/dutch/persian/french/german/italian/korean/russian/polish/turkish/ukrainian
 
 ## License:
 phpFileManager is free software; you can redistribute it and/or modify it
