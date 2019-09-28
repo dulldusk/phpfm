@@ -2,8 +2,6 @@
 
 https://sourceforge.net/projects/phpfm/
 
-![phpFileManager - Demo](https://www.dulldusk.com/assets/files/phpfm/ss1.7.2.png)
-
 phpFileManager is a complete filesystem management tool on a single file.
 
 This is a tool meant for rapid file access, and also to verify the server php configuration and security.
@@ -12,10 +10,12 @@ The script can be renamed and deployed on an unique known url, and offers passwo
 Online Demo: https://phpfm-demo.000webhostapp.com
 Feel free to mess around! This is a public demo installation, and will reset itself every 30 min.
 
+![phpFileManager - Demo](https://www.dulldusk.com/assets/files/phpfm/ss1.7.2.png)
+
 ## Features:
 - directory tree, with ajax loading
 - copy/move/delete/create/rename/edit/view/chmod files and folders
-- tar/zip/bzip/gzip with native support
+- tar/zip/bzip/gzip support
 - code editor with syntax highlight, using Ace and Monokai theme
 - shell terminal emulator
 - portscan using PHP sockets
@@ -23,8 +23,24 @@ Feel free to mess around! This is a public demo installation, and will reset its
 - multiple uploads
 - password protection
 - works on linux/mac/windows
-- php4/php5/php6/php7 compatible
-- translations included for english/portuguese/spanish/catalan/chinese/dutch/persian/french/german/italian/korean/russian/polish/turkish/ukrainian
+- works on all php versions
+- translations included for:
+    . catalan
+    . chinese
+    . dutch
+    . english
+    . french
+    . german
+    . italian
+    . korean
+    . persian/dari
+    . portuguese
+    . polish
+    . serbian
+    . spanish
+    . russian
+    . turkish
+    . ukrainian
 
 ## License:
 phpFileManager is free software; you can redistribute it and/or modify it
