@@ -1,4 +1,5 @@
 <?php
+//{"lang":"","fm_root":"","timezone":"","date_format":"Y\/m\/d H:i","auth_pass":"d41d8cd98f00b204e9800998ecf8427e","error_reporting":1}
 /*-------------------------------------------------
 | PHP FILE MANAGER
 +--------------------------------------------------
@@ -7,7 +8,7 @@
 | Copyright (c) 2004-2019 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2019-03-18
+| Last Changed: 2019-09-27
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -4128,6 +4129,7 @@ function config_form(){
                 <option value='fa'>Persian/Dari - by Opensecure, Max Base</option>
                 <option value='pt'>Portuguese - by Fabricio Seger Kolling</option>
                 <option value='pl'>Polish - by Jakub Kocój</option>
+                <option value='sr'>Serbian - by Miroljub Sunajko</option>
                 <option value='es'>Spanish - by Sh Studios</option>
                 <option value='ru'>Russian - by Евгений Рашев, Алексей Гаврюшин</option>
                 <option value='tr'>Turkish - by Necdet Yazilimlari</option>
@@ -7844,8 +7846,8 @@ function et($tag){
     $et['fa']['DocRoot'] = 'ریشه سند';
     $et['fa']['FMRoot'] = 'ریشه مدیریت فایل';
     $et['fa']['DateFormat'] = 'فرمت تاریخ';
-    $et['en']['GetSize'] = 'Get size';
-    $et['en']['Error'] = 'Error';
+    $et['fa']['GetSize'] = 'Get size';
+    $et['fa']['Error'] = 'Error';
     $et['fa']['Name'] = 'نام';
     $et['fa']['And'] = 'و';
     $et['fa']['Enter'] = 'وارد شدن';
@@ -7870,8 +7872,8 @@ function et($tag){
     $et['fa']['ServerInfo'] = 'معلومات سرور';
     $et['fa']['CreateDir'] = 'ساخت دایرکتوری';
     $et['fa']['CreateArq'] = 'ساخت فایل';
-    $et['en']['Symlink'] = 'Symlink';
-    $et['en']['HardLink'] = 'Hardlink';
+    $et['fa']['Symlink'] = 'Symlink';
+    $et['fa']['HardLink'] = 'Hardlink';
     $et['fa']['ExecCmd'] = 'احرای دستور';
     $et['fa']['Upload'] = 'بارگذاری';
     $et['fa']['UploadEnd'] = 'اتمام بارگذاری';
@@ -7961,6 +7963,130 @@ function et($tag){
     $et['fa']['About'] = 'درباره';
     $et['fa']['FileSaved'] = 'فایل ذخیره شد';
     $et['fa']['FileSaveError'] = 'خطا در ذخیره فایل';
+
+    // Serbian - by Miroljub Sunajko
+    $et['sr']['Version'] = 'Verzija';
+    $et['sr']['DocRoot'] = 'Koren dokumenta';
+    $et['sr']['FMRoot'] = 'Koren menadžera datoteka';
+    $et['sr']['DateFormat'] = 'Foramt datuma';
+    $et['sr']['GetSize'] = 'dobivanje veličine';
+    $et['sr']['Error'] = 'Greška';
+    $et['sr']['Name'] = 'Ime';
+    $et['sr']['And'] = 'i';
+    $et['sr']['srter'] = 'srter';
+    $et['sr']['Ssrd'] = 'Ssrd';
+    $et['sr']['Refresh'] = 'Osveži';
+    $et['sr']['SaveConfig'] = 'Sačuvaj konfiguraciju';
+    //$et['sr']['SavePass'] = 'Save Password';
+    //$et['sr']['TypePass'] = 'srter the password';
+    $et['sr']['SaveFile'] = 'Sačuvaj datoteku';
+    $et['sr']['Save'] = 'Sačuvaj';
+    $et['sr']['Leave'] = 'Napusti';
+    $et['sr']['Edit'] = 'Urediti';
+    $et['sr']['View'] = 'Pogledati';
+    $et['sr']['Config'] = 'Konfig';
+    $et['sr']['Ren'] = 'Preimenovati';
+    $et['sr']['Rsr'] = 'Rsrame';
+    $et['sr']['Rem'] = 'Izbriši';
+    $et['sr']['Compress'] = 'Komprimiraj';
+    $et['sr']['Decompress'] = 'Dekomprimiraj';
+    $et['sr']['ResolveIDs'] = 'Rešavanje IDs';
+    $et['sr']['Move'] = 'Premesti';
+    $et['sr']['Copy'] = 'Kopiraj';
+    $et['sr']['ServerInfo'] = 'Podaci o serveru';
+    $et['sr']['CreateDir'] = 'Kreiraj direktorijum';
+    $et['sr']['CreateArq'] = 'Kreiraj datoteku';
+    $et['sr']['Symlink'] = 'Symlink';
+    $et['sr']['HardLink'] = 'Hard veza';
+    $et['sr']['ExecCmd'] = 'Izvrši naredbu';
+    $et['sr']['Upload'] = 'Prenos';
+    $et['sr']['Uploadsrd'] = 'Prenos je završen';
+    $et['sr']['Perm'] = 'Perm';
+    $et['sr']['Perms'] = 'Dozvole';
+    $et['sr']['Owner'] = 'Vlasnik';
+    $et['sr']['Group'] = 'Grupa';
+    $et['sr']['Other'] = 'Ostalo';
+    $et['sr']['Size'] = 'Veličina';
+    $et['sr']['Date'] = 'Datum';
+    $et['sr']['Type'] = 'Vrsta';
+    $et['sr']['Free'] = 'besplatno';
+    $et['sr']['Shell'] = 'Školjka';
+    $et['sr']['Read'] = 'Pročitaj';
+    $et['sr']['Write'] = 'Piši';
+    $et['sr']['Exec'] = 'Izvrši';
+    $et['sr']['Apply'] = 'Primeni';
+    $et['sr']['StickyBit'] = 'Lepljiv Bit';
+    $et['sr']['Pass'] = 'Lozinka';
+    $et['sr']['Lang'] = 'Jezik';
+    $et['sr']['File'] = 'Datoteka';
+    $et['sr']['File_s'] = 'datoteka(s)';
+    $et['sr']['Dir_s'] = 'direktorij(s)';
+    $et['sr']['To'] = 'do';
+    $et['sr']['Destination'] = 'Odredište';
+    $et['sr']['Configurations'] = 'Konfiguracija';
+    $et['sr']['JSError'] = 'JavaScript greškar';
+    $et['sr']['NoSel'] = 'Nema odabranih stavki';
+    $et['sr']['SelDir'] = 'Odaberite odredišni direktorijum na levom stablu';
+    $et['sr']['TypeDir'] = 'ime direktorija';
+    $et['sr']['TypeArq'] = 'ime datoteke';
+    $et['sr']['TypeCmd'] = 'naredba';
+    $et['sr']['TypeArqComp'] = 'srter the file name.\\nThe extsrsion će definisati tip kompresije.\\nEx:\\nnome.zip\\nnome.tar\\nnome.bzip\\nnome.gzip';
+    $et['sr']['RemSel'] = 'IZBRIŠI izabrane stavke';
+    $et['sr']['NoDestDir'] = 'Nema izabranog odredišnog direktorijuma';
+    $et['sr']['DestEqOrig'] = 'Izvorni i odredišni direktorijumi su jednaki';
+    $et['sr']['InvalidDest'] = 'Direktorijum odredišta nije vašeći';
+    $et['sr']['NoNewPerm'] = 'Nova dozvola nije postavljena';
+    $et['sr']['CopyTo'] = 'Kopiraj u';
+    $et['sr']['MoveTo'] = 'Premesti u';
+    $et['sr']['AlterPermTo'] = 'PROMENI DOZVOLE u';
+    $et['sr']['ConfExec'] = 'Potvrdi IZVRŠENJE';
+    $et['sr']['ConfRem'] = 'Potvrdi BRISANJE';
+    $et['sr']['EmptyDir'] = 'Prazan direktorijum';
+    $et['sr']['IOError'] = 'I/O greška';
+    $et['sr']['FileMan'] = 'Menadžer datoteka';
+    $et['sr']['InvPass'] = 'Nevažeća lozinka';
+    $et['sr']['ReadDsried'] = 'Pristup čitanju nije moguć';
+    $et['sr']['FilsrotFound'] = 'Datoteka nije pronadjena';
+    $et['sr']['AutoClose'] = 'Zatvori završeno';
+    $et['sr']['OutDocRoot'] = 'Datoteka izvan DOCUMsrT_ROOT';
+    $et['sr']['NoCmd'] = 'Greška: Naredba nije  informed';
+    $et['sr']['ConfTrySave'] = 'Datoteka bez dozvole za pisanje.\\pokušajte ipak da je sačuvate';
+    $et['sr']['ConfSaved'] = 'Konfiguracije su sačuvane';
+    $et['sr']['PassSaved'] = 'Lozinka je sačuvana';
+    $et['sr']['FileDirExists'] = 'Datoteka ili direktorijum već postoje';
+    $et['sr']['NoPhpinfo'] = 'Funkcija phpinfo je onemogućena';
+    $et['sr']['NoReturn'] = 'nema povratka';
+    $et['sr']['FileSsrt'] = 'Datoteka ssrt';
+    $et['sr']['SpaceLimReached'] = 'Dostignuta ograničenja prostora';
+    $et['sr']['InvExt'] = 'Nevažeća extsrsion';
+    $et['sr']['FilsroOverw'] = 'Datoteka se nemože prepisati';
+    $et['sr']['FileOverw'] = 'Datoteka prepisana';
+    $et['sr']['FileIgnored'] = 'Datoteka je ignorisana';
+    $et['sr']['ChkVer'] = 'Proveri novu verziju';
+    $et['sr']['ChkVerAvailable'] = 'Nova verzija, kliknite ovde da započnete preuzimanje!!';
+    $et['sr']['ChkVerNotAvailable'] = 'Nova verzija nije dostupna. :(';
+    $et['sr']['ChkVerError'] = 'Greška u povezivanju.';
+    $et['sr']['Website'] = 'Veb lokacija';
+    $et['sr']['SsrdingForm'] = 'Ssrding datoteke , molim pričekajte';
+    $et['sr']['NoFileSel'] = 'Nije odabrana datoteka';
+    $et['sr']['SelAll'] = 'Sve';
+    $et['sr']['SelNone'] = 'Nema';
+    $et['sr']['SelInverse'] = 'Inverzno';
+    $et['sr']['Selected_s'] = 'izabrano';
+    $et['sr']['Total'] = 'ukupno';
+    $et['sr']['Partition'] = 'Particija';
+    $et['sr']['RsrderTime'] = 'Vreme da se ova stranica izvrši';
+    $et['sr']['Seconds'] = 'sec';
+    $et['sr']['ErrorReport'] = 'Izveštaj o greškama';
+    $et['sr']['Close'] = 'Zatvori';
+    $et['sr']['SetPass'] = 'Postavi Lozinku';
+    $et['sr']['ChangePass'] = 'Promeni Lozinku';
+    $et['sr']['Portscan'] = 'Portscan';
+    $et['sr']['PHPOpsrBasedir'] = 'PHP Opsr Basedir';
+    $et['sr']['PHPOpsrBasedirFullAccess'] = '(ukida) Puni pristup';
+    $et['sr']['About'] = 'O meni';
+    $et['sr']['FileSaved'] = 'Datoteka je sačuvana';
+    $et['sr']['FileSaveError'] = 'Greška prilikom čuvanja datoteke';
 
     if (!strlen($lang)) $lang = $sys_lang;
     if (isset($et[$lang][$tag])) return html_encode($et[$lang][$tag]);
