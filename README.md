@@ -25,22 +25,22 @@ Feel free to mess around! This is a public demo installation, and will reset its
 - works on linux/mac/windows
 - works on all php versions
 - translations included for:
-    . catalan
-    . chinese
-    . dutch
-    . english
-    . french
-    . german
-    . italian
-    . korean
-    . persian/dari
-    . portuguese
-    . polish
-    . serbian
-    . spanish
-    . russian
-    . turkish
-    . ukrainian
+    - catalan
+    - chinese
+    - dutch
+    - english
+    - french
+    - german
+    - italian
+    - korean
+    - persian/dari
+    - portuguese
+    - polish
+    - serbian
+    - spanish
+    - russian
+    - turkish
+    - ukrainian
 
 ## License:
 phpFileManager is free software; you can redistribute it and/or modify it
