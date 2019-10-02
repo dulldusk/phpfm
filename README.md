@@ -14,11 +14,12 @@ Feel free to mess around! This is a public demo installation, and will reset its
 
 ## Features:
 - directory tree, with ajax loading
-- copy/move/delete/create/rename/edit/view/chmod files and folders
+- create/rename/delete/chmod/copy/move/edit/view/execute files and folders
+- symlink and hardlink support
 - tar/zip/bzip/gzip support
-- code editor with syntax highlight, using Ace and Monokai theme
+- file editor with 12 syntax highlight modes and Monokai theme
 - shell terminal emulator
-- portscan using PHP sockets
+- ping/portscan using PHP sockets
 - server info
 - multiple uploads
 - password protection
