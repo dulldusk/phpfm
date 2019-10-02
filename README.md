@@ -13,7 +13,7 @@ Feel free to mess around! This is a public demo installation, and will reset its
 ![phpFileManager - Demo](https://www.dulldusk.com/assets/files/phpfm/ss1.7.2.png)
 
 ## Features:
-- directory tree, with ajax loading
+- directory tree with ajax loading
 - create/rename/delete/chmod/copy/move/edit/view/execute files and folders
 - symlink and hardlink support
 - tar/zip/bzip/gzip support
