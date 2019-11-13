@@ -918,6 +918,7 @@ function download(){
             header("Content-Disposition: attachment; filename=\"".$filename."\"");
             header("Content-Transfer-Encoding: binary");
             if ($fh = fopen("$file", "rb")){
+                ob_get_flush();
                 fpassthru($fh);
                 fclose($fh);
             } else alert(et('ReadDenied').": ".$file);
