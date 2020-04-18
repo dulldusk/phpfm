@@ -8,7 +8,8 @@ This is a tool meant for rapid file access, and also to verify the server php co
 The script can be renamed and deployed on an unique known url, and offers password protection.
 
 Online Demo: https://phpfm-demo.000webhostapp.com
-Feel free to mess around! This is a public demo installation, and will reset itself every 30 min.
+Feel free to mess around! This is a public demo installation, and will reset itself every hour.
+If you want to learn how i created this demo, the code is on my website https://www.dulldusk.com
 
 ![phpFileManager - Demo](https://www.dulldusk.com/assets/files/phpfm/ss1.7.2.png)
 
