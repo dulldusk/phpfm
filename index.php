@@ -5,10 +5,10 @@
 +--------------------------------------------------
 | phpFileManager 1.7.9
 | By Fabricio Seger Kolling
-| Copyright (c) 2004-2019 Fabrício Seger Kolling
+| Copyright (c) 2004-2020 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2019-09-27
+| Last Changed: 2020-04-28
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -234,8 +234,8 @@ if (strlen($open_basedir_ini)) {
     }
 }
 $sys_lang = strtolower(substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2));
-if (!function_exists('mb_strtoupper')) {
-    die('PHP File Manager<br>Error: Please enable "mbstring" php module.');
+if (!function_exists('mb_strtolower') || !function_exists('mb_strtoupper')) {
+    die('PHP File Manager<br>Error: Please enable "mbstring" php module.<br>http://php.net/manual/en/book.mbstring.php');
 }
 // +--------------------------------------------------
 // | Config Class
@@ -699,7 +699,7 @@ function link_phpfm($target,$link){
 }
 function phpfm_get_total_size($path){
     $total_size = false;
-    $dir_cookiename = fix_cookie_name($path);
+    $dir_cookiename = 'dir_'.md5(fix_cookie_name($path));
     if (strlen($_COOKIE[$dir_cookiename])) {
         $total_size = $_COOKIE[$dir_cookiename];
         if ($total_size != 'error'){
@@ -723,7 +723,7 @@ function dir_list_update_total_size(){
     if ($total_size === false) {
         $total_size = 'error';
     }
-    $dir_cookiename = fix_cookie_name($fm_current_dir.$dirname);
+    $dir_cookiename = 'dir_'.md5(fix_cookie_name($fm_current_dir.$dirname));
     setcookie((string)$dir_cookiename, (string)$total_size, 0 , "/");
     echo $total_size;
     die();
@@ -771,7 +771,6 @@ function system_get_total_size($path){
     else fb_log('system_get_total_size("'.$path.'") = '.format_size($total_size));
     return $total_size;
 }
-
 function php_get_total_size($path) {
     global $debug_mode,$max_php_recursion_counter;
     $max_php_recursion_counter = 0;
@@ -918,7 +917,7 @@ function download(){
             header("Content-Disposition: attachment; filename=\"".$filename."\"");
             header("Content-Transfer-Encoding: binary");
             if ($fh = fopen("$file", "rb")){
-                ob_get_flush();
+                ob_get_flush(); // Flush the output buffer and turn off output buffering, to allow direct download of big files
                 fpassthru($fh);
                 fclose($fh);
             } else alert(et('ReadDenied').": ".$file);
@@ -933,7 +932,7 @@ function linux_get_proc_name(){
     return $output;
 }
 function system_exec_file(){
-    global $fm_current_dir,$filename,$debug_mode;
+    global $fm_current_dir,$filename,$debug_mode,$is_windows;
     fb_log('system_exec_file',$filename);
     if ($debug_mode) return;
     header("Content-type: text/plain");
@@ -962,7 +961,7 @@ function system_exec_file(){
     } else echo(et('FileNotFound').": ".$file);
 }
 function save_upload($temp_file,$filename,$dir_dest) {
-    global $upload_ext_filter,$debug_mode;
+    global $upload_ext_filter,$debug_mode,$is_windows;
     fb_log('save_upload',$temp_file.' => '.$dir_dest.$filename);
     if ($debug_mode) return;
     $filename = remove_special_chars($filename);
@@ -999,6 +998,7 @@ function save_upload($temp_file,$filename,$dir_dest) {
 }
 // Note: readlink() may return a relative path, with or without ./, and that is not good for is_file() is_dir() and broken link evaluation, because we can´t always chdir() to the link basepath.
 function readlink_absolute_path($path){
+    global $is_windows;
     if (!is_link($path)) return $path;
     $target = readlink($path);
     if (strpos($target,'.'.DIRECTORY_SEPARATOR) === 0){
@@ -3783,7 +3783,7 @@ function edit_file_form(){
     $ace_mode_opts[] = array('JSON','json');
     $ace_mode_opts[] = array('PLAIN TEXT','plain_text');
     $ace_mode_curr = ace_mode_autodetect($file);
-    $file_ace_mode_cookiename = fix_cookie_name('ace_mode_'.$file);
+    $file_ace_mode_cookiename = 'ace_'.md5(fix_cookie_name('ace_mode_'.$file));
     if (strlen($_COOKIE[$file_ace_mode_cookiename])) $ace_mode_curr = $_COOKIE[$file_ace_mode_cookiename];
     if (strlen($ace_mode)) $ace_mode_curr = $ace_mode;
     setcookie($file_ace_mode_cookiename, $ace_mode_curr, time()+$cookie_cache_time, "/");
