@@ -699,7 +699,7 @@ function link_phpfm($target,$link){
 }
 function phpfm_get_total_size($path){
     $total_size = false;
-    $dir_cookiename = 'dir_'.md5(fix_cookie_name($path));
+    $dir_cookiename = 'dir_'.hash('crc32',fix_cookie_name($path),FALSE);
     if (strlen($_COOKIE[$dir_cookiename])) {
         $total_size = $_COOKIE[$dir_cookiename];
         if ($total_size != 'error'){
@@ -723,7 +723,7 @@ function dir_list_update_total_size(){
     if ($total_size === false) {
         $total_size = 'error';
     }
-    $dir_cookiename = 'dir_'.md5(fix_cookie_name($fm_current_dir.$dirname));
+    $dir_cookiename = 'dir_'.hash('crc32',fix_cookie_name($fm_current_dir.$dirname),FALSE);
     setcookie((string)$dir_cookiename, (string)$total_size, 0 , "/");
     echo $total_size;
     die();
@@ -3783,7 +3783,7 @@ function edit_file_form(){
     $ace_mode_opts[] = array('JSON','json');
     $ace_mode_opts[] = array('PLAIN TEXT','plain_text');
     $ace_mode_curr = ace_mode_autodetect($file);
-    $file_ace_mode_cookiename = 'ace_'.md5(fix_cookie_name('ace_mode_'.$file));
+    $file_ace_mode_cookiename = 'ace_'.hash('crc32',fix_cookie_name($file),FALSE);
     if (strlen($_COOKIE[$file_ace_mode_cookiename])) $ace_mode_curr = $_COOKIE[$file_ace_mode_cookiename];
     if (strlen($ace_mode)) $ace_mode_curr = $ace_mode;
     setcookie($file_ace_mode_cookiename, $ace_mode_curr, time()+$cookie_cache_time, "/");
