@@ -11,8 +11,6 @@ Online Demo: https://phpfm-demo.000webhostapp.com
 Feel free to mess around! This is a public demo installation, and will reset itself every hour.
 If you want to learn how i created this demo, the code is on my website https://www.dulldusk.com
 
-![phpFileManager - Demo](https://www.dulldusk.com/assets/files/phpfm/ss1.7.2.png)
-
 ## Features:
 - directory tree with ajax loading
 - create/rename/delete/chmod/copy/move/edit/view/execute files and folders
