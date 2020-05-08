@@ -588,6 +588,34 @@ function is_executable_phpfm($file){
     return is_rwx_phpfm($file,'x');
 }
 // +--------------------------------------------------
+// | BASE64 FILES
+// | So that PHP File Manager can remain a single file script,
+// | and still work normally on offline enviroments
+// +--------------------------------------------------
+if(!function_exists('apache_request_headers')){
+    function apache_request_headers(){
+        $arh = array();
+        $rx_http = '/\AHTTP_/';
+        foreach($SERVER as $key => $val) {
+            if( preg_match($rx_http, $key) ) {
+                $arh_key = preg_replace($rx_http, '', $key);
+                $rx_matches = array();
+                // do some nasty string manipulations to restore the original letter case
+                // this should work in most cases
+                $rx_matches = explode('', $arh_key);
+                if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
+                    foreach($rx_matches as $ak_key => $ak_val) {
+                        $rx_matches[$ak_key] = ucfirst($ak_val);
+                    }
+                    $arh_key = implode('-', $rx_matches);
+                }
+                $arh[$arh_key] = $val;
+            }
+        }
+        return $arh;
+    }
+}
+// +--------------------------------------------------
 // | File Manager Actions
 // +--------------------------------------------------
 if ($action != '99') {
@@ -8093,34 +8121,6 @@ function et($tag){
     if (isset($et[$lang][$tag])) return html_encode($et[$lang][$tag]);
     else if (isset($et['en'][$tag])) return html_encode($et['en'][$tag]);
     else return "$tag"; // So we can know what is missing
-}
-// +--------------------------------------------------
-// | BASE64 FILES
-// | So that PHP File Manager can remain a single file script,
-// | and still work normally on offline enviroments
-// +--------------------------------------------------
-if(!function_exists('apache_request_headers')){
-    function apache_request_headers(){
-        $arh = array();
-        $rx_http = '/\AHTTP_/';
-        foreach($SERVER as $key => $val) {
-            if( preg_match($rx_http, $key) ) {
-                $arh_key = preg_replace($rx_http, '', $key);
-                $rx_matches = array();
-                // do some nasty string manipulations to restore the original letter case
-                // this should work in most cases
-                $rx_matches = explode('', $arh_key);
-                if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
-                    foreach($rx_matches as $ak_key => $ak_val) {
-                        $rx_matches[$ak_key] = ucfirst($ak_val);
-                    }
-                    $arh_key = implode('-', $rx_matches);
-                }
-                $arh[$arh_key] = $val;
-            }
-        }
-        return $arh;
-    }
 }
 function get_base64_file(){
     global $filename,$fm_path_info;
