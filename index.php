@@ -132,7 +132,7 @@ if(!isset($_SERVER['DOCUMENT_ROOT'])) {
     $_SERVER['DOCUMENT_ROOT'] = substr($path, 0, 0-strlen($_SERVER['PHP_SELF']));
 }
 $_SERVER['DOCUMENT_ROOT'] = fix_directory_separator($_SERVER['DOCUMENT_ROOT']);
-if (@get_magic_quotes_gpc()) {
+if (!function_exists('get_magic_quotes_gpc') || get_magic_quotes_gpc()) {
     function stripslashes_deep($value){
         return is_array($value)? array_map('stripslashes_deep', $value):$value;
     }
@@ -1774,12 +1774,12 @@ function alert($arg){
     </script>
     ";
 }
-define('UTF32_BIG_ENDIAN_BOM'   , chr(0x00).chr(0x00).chr(0xFE).chr(0xFF));
-define('UTF32_LITTLE_ENDIAN_BOM', chr(0xFF).chr(0xFE).chr(0x00).chr(0x00));
-define('UTF16_BIG_ENDIAN_BOM'   , chr(0xFE).chr(0xFF));
-define('UTF16_LITTLE_ENDIAN_BOM', chr(0xFF).chr(0xFE));
-define('UTF8_BOM'               , chr(0xEF).chr(0xBB).chr(0xBF));
 function get_encoding($text){
+    define('UTF32_BIG_ENDIAN_BOM'   , chr(0x00).chr(0x00).chr(0xFE).chr(0xFF));
+    define('UTF32_LITTLE_ENDIAN_BOM', chr(0xFF).chr(0xFE).chr(0x00).chr(0x00));
+    define('UTF16_BIG_ENDIAN_BOM'   , chr(0xFE).chr(0xFF));
+    define('UTF16_LITTLE_ENDIAN_BOM', chr(0xFF).chr(0xFE));
+    define('UTF8_BOM'               , chr(0xEF).chr(0xBB).chr(0xBF));
     $first2 = mb_substr($text, 0, 2);
     $first3 = mb_substr($text, 0, 3);
     $first4 = mb_substr($text, 0, 4);
