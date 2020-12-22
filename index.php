@@ -4126,6 +4126,7 @@ function config_form(){
                 <option value='fr'>French - by Jean Bilwes</option>
                 <option value='de'>German - by Guido Ogrzal</option>
                 <option value='it'>Italian - by Valerio Capello</option>
+                <option value='ja'>Japanese - by h3zjp</option>
                 <option value='ko'>Korean - by Airplanez</option>
                 <option value='fa'>Persian/Dari - by Opensecure, Max Base</option>
                 <option value='pt'>Portuguese - by Fabricio Seger Kolling</option>
