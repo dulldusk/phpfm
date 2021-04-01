@@ -968,6 +968,7 @@ function save_upload($temp_file,$filename,$dir_dest) {
     $file = $dir_dest.$filename;
     $filesize = phpfm_filesize($temp_file);
     $is_denied = false;
+    $output = '';
     foreach($upload_ext_filter as $key=>$ext){
         if (eregi($ext,$filename)){
             $is_denied = true;
@@ -980,14 +981,14 @@ function save_upload($temp_file,$filename,$dir_dest) {
                 if (unlink($file)){
                     if (copy($temp_file,$file)){
                         // https://stackoverflow.com/questions/23851821/setting-file-permissions-in-windows-with-php
-                        if ($is_windows) system_exec_cmd('icacls "'.$file.'" /q /c /reset');
+                        if ($is_windows) system_exec_cmd('icacls "'.$file.'" /q /c /reset', $output);
                         else @chmod($file,0644);
                         $out = 6;
                     } else $out = 2;
                 } else $out = 5;
             } else {
                 if (copy($temp_file,$file)){
-                    if ($is_windows) system_exec_cmd('icacls "'.$file.'" /q /c /reset');
+                    if ($is_windows) system_exec_cmd('icacls "'.$file.'" /q /c /reset', $output);
                     else @chmod($file,0644);
                     $out = 1;
                 } else $out = 2;
