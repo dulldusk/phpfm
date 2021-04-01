@@ -33,6 +33,7 @@ If you want to learn how i created this demo, the code is on my website https://
     - french
     - german
     - italian
+    - japanese
     - korean
     - persian/dari
     - portuguese
