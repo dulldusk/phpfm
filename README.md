@@ -43,6 +43,7 @@ If you want to learn how i created this demo, the code is on my website https://
     - russian
     - turkish
     - ukrainian
+    - urdu
 
 ## License:
 phpFileManager is free software; you can redistribute it and/or modify it
