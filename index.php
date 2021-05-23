@@ -4129,6 +4129,7 @@ function config_form(){
                 <option value='ru'>Russian - by Евгений Рашев, Алексей Гаврюшин</option>
                 <option value='tr'>Turkish - by Necdet Yazilimlari</option>
                 <option value='ua'>Ukrainian - by Андрій Литвин</option>
+                <option value='id'>Indonesian - by dirmanhana</option>
             </select>
         </td></tr>
         <tr><td align=right>".et('ErrorReport').":<td>
