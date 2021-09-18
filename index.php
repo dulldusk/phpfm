@@ -102,10 +102,10 @@ $services['8200'] = "GOTOMYPC";
 $services['10000'] = "VIRTUALMIN-ADMIN";
 $services['27017'] = "MONGODB";
 $services['50000'] = "DB2";
-// +--------------------------------------------------
-// | Special function declarations for FHP backwards compatibility,
+// +---------------------------------------------------------------
+// | Special function declarations for PHP backwards compatibility,
 // | missing PHP modules, Web server issues, and anything else..
-// +--------------------------------------------------
+// +---------------------------------------------------------------
 if(!function_exists('mime_content_type')){ // Fallback if PHP fileinfo module is not available
     function mime_content_type($path){
         return 'application/octet-stream';
@@ -6414,7 +6414,7 @@ function et($tag){
     $et['en']['About'] = 'About';
     $et['en']['FileSaved'] = 'File saved';
     $et['en']['FileSaveError'] = 'Error saving file';
-	
+
 	// Shqip (Albanian) - by Vilson Bujaj
     $et['sq']['Version'] = 'Versioni';
     $et['sq']['DocRoot'] = 'Document Root';
@@ -8346,7 +8346,7 @@ function et($tag){
     $et['ja']['About'] = 'About';
     $et['ja']['FileSaved'] = 'ファイルを保存しました';
     $et['ja']['FileSaveError'] = 'ファイルの保存時にエラーが発生しました';
-   
+
     // Bahasa Indonesia - by dirmanhana
     $et['id']['Version'] = 'Versi';
     $et['id']['DocRoot'] = 'Document Root ';
@@ -8593,7 +8593,7 @@ function et($tag){
     $et['ur']['About'] = 'کے بارے میں';
     $et['ur']['FileSaved'] = 'فائل محفوظ ہوگئی';
     $et['ur']['FileSaveError'] = 'فائل کو محفوظ کرنے میں خامی';
-   
+
     if (!strlen($lang)) $lang = $sys_lang;
     if (isset($et[$lang][$tag])) return html_encode($et[$lang][$tag]);
     else if (isset($et['en'][$tag])) return html_encode($et['en'][$tag]);
