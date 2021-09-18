@@ -8,7 +8,7 @@
 | Copyright (c) 2004-2021 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2021-02-09
+| Last Changed: 2021-09-18
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -102,6 +102,47 @@ $services['8200'] = "GOTOMYPC";
 $services['10000'] = "VIRTUALMIN-ADMIN";
 $services['27017'] = "MONGODB";
 $services['50000'] = "DB2";
+// +--------------------------------------------------
+// | Special function declarations for FHP backwards compatibility,
+// | missing PHP modules, Web server issues, and anything else..
+// +--------------------------------------------------
+if(!function_exists('mime_content_type')){ // Fallback if PHP fileinfo module is not available
+    function mime_content_type($path){
+        return 'application/octet-stream';
+    }
+}
+if(!function_exists('get_magic_quotes_gpc')){ // A base PHP function removed as of PHP 8.0.0
+    function get_magic_quotes_gpc(){
+        return false;
+    }
+}
+if(!function_exists('apache_request_headers')){ // Function for Ngnix and other HTTPDs support
+    function apache_request_headers(){
+        $arh = array();
+        $rx_http = '/\AHTTP_/';
+        foreach($SERVER as $key => $val) {
+            if( preg_match($rx_http, $key) ) {
+                $arh_key = preg_replace($rx_http, '', $key);
+                $rx_matches = array();
+                // do some nasty string manipulations to restore the original letter case
+                // this should work in most cases
+                $rx_matches = explode('', $arh_key);
+                if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
+                    foreach($rx_matches as $ak_key => $ak_val) {
+                        $rx_matches[$ak_key] = ucfirst($ak_val);
+                    }
+                    $arh_key = implode('-', $rx_matches);
+                }
+                $arh[$arh_key] = $val;
+            }
+        }
+        return $arh;
+    }
+}
+// PHP mbstring module is needed for multibyte support and internationalization
+if (!function_exists('mb_strtolower') || !function_exists('mb_strtoupper')) {
+    die('PHP File Manager<br>Error: Please enable "mbstring" PHP module.<br>http://php.net/manual/en/book.mbstring.php');
+}
 // +--------------------------------------------------
 // | Header and Globals
 // +--------------------------------------------------
@@ -234,9 +275,6 @@ if (strlen($open_basedir_ini)) {
     }
 }
 $sys_lang = strtolower(substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2));
-if (!function_exists('mb_strtolower') || !function_exists('mb_strtoupper')) {
-    die('PHP File Manager<br>Error: Please enable "mbstring" php module.<br>http://php.net/manual/en/book.mbstring.php');
-}
 // +--------------------------------------------------
 // | Config Class
 // +--------------------------------------------------
@@ -2123,11 +2161,6 @@ function frame2(){
     echo "</td></tr>";
     echo "</table>\n";
     echo "</body>\n</html>";
-}
-if(!function_exists('mime_content_type')){
-    function mime_content_type($path){
-        return 'application/octet-stream'; // fallback if mod_fileinfo is not available
-    }
 }
 function is_binary($file){
     //https://stackoverflow.com/questions/1765311/how-to-view-files-in-binary-from-bash
@@ -8314,7 +8347,7 @@ function et($tag){
     $et['ja']['FileSaved'] = 'ファイルを保存しました';
     $et['ja']['FileSaveError'] = 'ファイルの保存時にエラーが発生しました';
    
-   // Bahasa Indonesia - by dirmanhana
+    // Bahasa Indonesia - by dirmanhana
     $et['id']['Version'] = 'Versi';
     $et['id']['DocRoot'] = 'Document Root ';
     $et['id']['FMRoot'] = 'File Manajer Root ';
@@ -8438,7 +8471,7 @@ function et($tag){
     $et['id']['FileSaveError'] = 'gagal menyimpan file ';
 
 
-    	// Urdu - by MEGAMINDMK
+    // Urdu - by MEGAMINDMK
     $et['ur']['Version'] = 'ورژن';
     $et['ur']['DocRoot'] = 'دستاویز کی جڑ';
     $et['ur']['FMRoot'] = 'فائل مینیجر روٹ';
@@ -8571,29 +8604,6 @@ function et($tag){
 // | So that PHP File Manager can remain a single file script,
 // | and still work normally on offline enviroments
 // +--------------------------------------------------
-if(!function_exists('apache_request_headers')){
-    function apache_request_headers(){
-        $arh = array();
-        $rx_http = '/\AHTTP_/';
-        foreach($SERVER as $key => $val) {
-            if( preg_match($rx_http, $key) ) {
-                $arh_key = preg_replace($rx_http, '', $key);
-                $rx_matches = array();
-                // do some nasty string manipulations to restore the original letter case
-                // this should work in most cases
-                $rx_matches = explode('', $arh_key);
-                if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
-                    foreach($rx_matches as $ak_key => $ak_val) {
-                        $rx_matches[$ak_key] = ucfirst($ak_val);
-                    }
-                    $arh_key = implode('-', $rx_matches);
-                }
-                $arh[$arh_key] = $val;
-            }
-        }
-        return $arh;
-    }
-}
 function get_base64_file(){
     global $filename,$fm_path_info;
     // +--------------------------------------------------
