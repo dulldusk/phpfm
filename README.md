@@ -26,6 +26,7 @@ If you want to learn how i created this demo, the code is on my website https://
 - works on linux/mac/windows
 - works on all php versions
 - translations included for:
+    - albanian 
     - catalan
     - chinese
     - dutch
