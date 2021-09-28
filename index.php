@@ -8,7 +8,7 @@
 | Copyright (c) 2004-2021 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2021-09-18
+| Last Changed: 2021-09-28
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -197,18 +197,6 @@ if (!defined('PHP_VERSION_ID')) {
     }
 }
 // Server Vars
-function curl_server_online_check(){
-    if (function_exists('curl_init')){
-        @$ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "http://phpfm.sf.net");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        @curl_exec($ch);
-        $errnum = curl_errno($ch);
-        @curl_close($ch);
-    }
-    return ($errnum == "0");
-}
 function socket_get_lan_ip($dest='64.0.0.0', $port=80) {
     $addr = '';
     if (function_exists('socket_create')){
@@ -845,37 +833,6 @@ function php_get_total_size_execute($path) {
     }
     return $total_size;
 }
-function php_shred($filepath) {
-    // Based on https://github.com/DanielRuf/secure-shred (MIT license)
-    // https://www.aldeid.com/wiki/Secure-delete-files
-    // TODO: test write each pass, and rename the file before delete.
-    try {
-        // clear stat cache to avoid falsely reported file status
-        // use $filepath parameter to possibly improve performance
-        clearstatcache(true, $filepath);
-        if (is_file($filepath) && is_readable($filepath) && is_writable($filepath)) {
-            $read = new \SplFileObject($filepath, 'r');
-            $write = new \SplFileObject($filepath, 'r+');
-            while (!$read->eof()) {
-                $line_pos = $read->ftell();
-                $line_content = $read->fgets();
-                $line_length = strlen($line_content);
-                if ($line_length === 0) continue;
-                for ($n=0;$n<3;$n++) { // does 3 overwrites per line
-                    $write->fseek($line_pos);
-                    $write->fwrite(random_bytes($line_length));
-                    $write->fflush();
-                }
-            }
-            $write->ftruncate(0);
-            $read = $write = null;
-            return unlink($filepath);
-        }
-    } catch(\Exception $e) {
-        fb_log($e->getMessage().' ('.$e->getCode().')');
-    }
-    return false;
-}
 function total_delete($path,$followlinks=false,$checkhardlinks=true) {
     global $debug_mode;
     fb_log('total_delete',$path);
@@ -963,12 +920,6 @@ function download(){
     } else alert(et('FileNotFound').": ".$file);
 }
 // Returns the full path of the current PHP executable
-function linux_get_proc_name(){
-    $output = '';
-    $ok = system_exec_cmd("readlink -f /proc/".posix_getpid()."/exe",$output);
-    if (!$ok) return false;
-    return $output;
-}
 function system_exec_file(){
     global $fm_current_dir,$filename,$debug_mode,$is_windows;
     fb_log('system_exec_file',$filename);
