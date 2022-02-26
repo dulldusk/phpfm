@@ -804,6 +804,17 @@ function system_get_total_size($path){
         if (system_exec_cmd('du -sb '.$path,$output)){
             $total_size = floatval(substr($output,0,strpos($output,"\t")));
         }
+        else{
+            $total_size = 0;
+            $path = realpath($path);
+            if(is_dir($path)){
+                foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS)) as $object){
+                    if ( !is_link($object) ){
+                        $total_size += $object->getSize();
+                    }
+                }
+            }
+        }
     }
     if ($total_size === false) fb_log('system_get_total_size("'.$path.'") = FALSE');
     else fb_log('system_get_total_size("'.$path.'") = '.format_size($total_size));
