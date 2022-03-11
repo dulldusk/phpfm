@@ -807,8 +807,8 @@ function system_get_total_size($path){
         else{
             $total_size = 0;
             $path = realpath($path);
-            if(is_dir($path)){
-                foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS)) as $object){
+            if(is_dir($path) && is_readable($path)){
+                foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::LEAVES_ONLY,  RecursiveIteratorIterator::CATCH_GET_CHILD) as $object){
                     if ( !is_link($object) ){
                         $total_size += $object->getSize();
                     }
