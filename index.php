@@ -1,5 +1,5 @@
 <?php
-//{"lang":"","fm_root":"","timezone":"","date_format":"Y\/m\/d H:i","auth_pass":"d41d8cd98f00b204e9800998ecf8427e","error_reporting":1}
+//{"lang":"","fm_root":"","timezone":"","date_format":"Y\/m\/d H:i","auth_pass":"","error_reporting":1}
 /*-------------------------------------------------
 | PHP FILE MANAGER
 +--------------------------------------------------
@@ -305,7 +305,7 @@ class config {
             'fm_root'=>'',
             'timezone'=>'',
             'date_format'=>'Y/m/d H:i',
-            'auth_pass'=>md5(''),
+            'auth_pass'=>'',
             'error_reporting'=>1
         );
     }
@@ -634,7 +634,7 @@ if ($action != '99') {
     header("Pragma: no-cache");
     header("Content-Type: text/html; charset=".$charset);
 }
-if ($auth_pass == md5('') || $loggedon==$auth_pass){
+if ($auth_pass == '' || $loggedon==$auth_pass){
     switch ($frame){
         case 1: break; // Empty Frame
         case 2: frame2(); break;
@@ -2012,7 +2012,7 @@ function frame2(){
         }
         if (count($fm_root_opts)>1) echo "<select name=drive onchange=\"set_fm_current_root(this.value)\" style=\"float:left; margin:1px 0 5px 0; margin-right:5px; padding:5px;\">".implode("\n",$fm_root_opts)."</select>";
         echo "<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn\" onclick=\"refresh_tree()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button>";
-        if ($auth_pass != md5('')) echo "&nbsp;<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
+        if ($auth_pass != '') echo "&nbsp;<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
     echo "</form>";
     echo "</td></tr>";
     echo "<tr valign=top><td>";
@@ -4025,7 +4025,7 @@ function config_form(){
                 $error_reporting = $newerror;
             }
             if ($cfg->data['auth_pass'] != $newpass){
-                $cfg->data['auth_pass'] = md5($newpass);
+                $cfg->data['auth_pass'] = (function_exists('password_hash') ? password_hash($newpass, PASSWORD_BCRYPT) : md5($newpass));
                 setcookie("loggedon", $cfg->data['auth_pass'], 0 , "/");
             }
             $cfg->save();
@@ -4173,12 +4173,9 @@ function config_form(){
                 <option value=\"1\">Show PHP Errors
                 <option value=\"2\">Show PHP Errors + ChromePhp Debug
             </select>
-        </td></tr>";
-        $show_pass = '';
-        if ($cfg->data['auth_pass'] != md5('')) $show_pass = $cfg->data['auth_pass'];
-        echo "
+        </td></tr>
         <tr><td align=right>".et('Pass').":<td>
-            <input type=\"password\" style=\"width:392px; padding:5px 8px;\" name=\"newpass\" id=\"newpass\" readonly autocomplete=\"off\" value=\"".html_encode($show_pass)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
+            <input type=\"password\" style=\"width:392px; padding:5px 8px;\" name=\"newpass\" id=\"newpass\" readonly autocomplete=\"off\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
         </td></tr>
         <tr><td>&nbsp;<td align=right><input type=button class=\"btn noIcon\" value=\"".et('SaveConfig')."\" onclick=\"test_config_form(1)\"></td></tr>
         </form>
@@ -5186,7 +5183,7 @@ function logout(){
 }
 function login(){
     global $pass,$auth_pass,$fm_path_info;
-    if (md5(trim($pass)) == $auth_pass){
+    if ((function_exists('password_verify') && password_verify(trim($pass), $auth_pass)) || md5(trim($pass)) == $auth_pass){
         setcookie("loggedon",$auth_pass,0,"/");
         header ("Location: ".$fm_path_info['basename']);
         return true;
@@ -5198,7 +5195,7 @@ function login_form(){
     html_header();
     echo "
     <body>";
-    if ($noscript && ($auth_pass == md5('') || $loggedon==$auth_pass)) {
+    if ($noscript && ($auth_pass == '' || $loggedon==$auth_pass)) {
         echo "
         <table border=0 cellspacing=0 cellpadding=5>
             <tr><td><font size=4>".et('FileMan')."</font></td></tr>
