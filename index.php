@@ -5114,8 +5114,9 @@ function server_info_form(){
         $a=ini_get_all();
         $output="<table border=1 cellspacing=0 cellpadding=4 align=center>";
         $output.="<tr><th colspan=2>ini_get_all()</td></tr>";
-        while(list($key, $value)=each($a)) {
-            list($k, $v)= each($a[$key]);
+        foreach($a as $key => $value) {
+            $k = key($a[$key]);
+            $v = current($a[$key]);
             $output.="<tr><td align=right>$key</td><td>$v</td></tr>";
         }
         $output.="</table>";
