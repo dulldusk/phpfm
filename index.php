@@ -3,12 +3,12 @@
 /*-------------------------------------------------
 | PHP FILE MANAGER
 +--------------------------------------------------
-| phpFileManager 1.7.10
+| phpFileManager 1.7.9
 | By Fabricio Seger Kolling
-| Copyright (c) 2004-2025 Fabrício Seger Kolling
+| Copyright (c) 2004-2021 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2025-01-03
+| Last Changed: 2021-09-18
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.10';
+$version = '1.7.9';
 $charset = 'UTF-8';
 $debug_mode = false;
 $max_php_recursion = 200;
