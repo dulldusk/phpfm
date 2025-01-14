@@ -152,10 +152,6 @@ function getmicrotime(){
    return ((float)$usec + (float)$sec);
 }
 $script_init_time = getmicrotime();
-function log_script_time(){
-    global $script_init_time;
-    fb_log(number_format((getmicrotime()-$script_init_time), 3, '.', '')."s");
-}
 $is_windows = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
 $max_php_recursion_counter = 0;
 if(!isset($_SERVER['PATH_INFO']) && isset($_SERVER['ORIG_PATH_INFO'])) {
@@ -197,18 +193,6 @@ if (!defined('PHP_VERSION_ID')) {
     }
 }
 // Server Vars
-function curl_server_online_check(){
-    if (function_exists('curl_init')){
-        @$ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "http://phpfm.sf.net");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        @curl_exec($ch);
-        $errnum = curl_errno($ch);
-        @curl_close($ch);
-    }
-    return ($errnum == "0");
-}
 function socket_get_lan_ip($dest='64.0.0.0', $port=80) {
     $addr = '';
     if (function_exists('socket_create')){
@@ -287,16 +271,7 @@ function object_to_array( $var ) {
     }
     return array_map( 'object_to_array', $var );
 }
-function array_to_object( $var ) {
-    if( !is_object( $var ) && !is_array( $var ) ) {
-        return $var;
-    }
-    $obj = new stdClass();
-    foreach ($var as $key => $value) {
-        if (strlen($key)) $obj->{$key} = array_to_object( $value );
-    }
-    return $obj;
-}
+
 class config {
     var $data;
     function __construct(){
@@ -616,15 +591,6 @@ function is_rwx_phpfm($file,$what='r'){
     if ($what == 'x') return $file_info['is_executable'];
     return false;
 }
-function is_readable_phpfm($file){
-    return is_rwx_phpfm($file,'r');
-}
-function is_writable_phpfm($file){
-    return is_rwx_phpfm($file,'w');
-}
-function is_executable_phpfm($file){
-    return is_rwx_phpfm($file,'x');
-}
 // +--------------------------------------------------
 // | File Manager Actions
 // +--------------------------------------------------
@@ -681,10 +647,8 @@ function symlink_phpfm($target,$link){
     if (!$ok){
         $cmd = '';
         if ($is_windows){
-            //$windows_runas_admin = 'windows_runas_admin /noprofile /user:Administrator ';
-            $windows_runas_admin = '';
-            if (is_dir($target)) $cmd = $windows_runas_admin.'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
-            else $cmd = $windows_runas_admin.'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
+            if (is_dir($target)) $cmd = 'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
+            else $cmd = 'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
         } else {
             $cmd = 'ln -s '.escapeshellarg($target).' '.escapeshellarg($link);
         }
@@ -722,9 +686,7 @@ function link_phpfm($target,$link){
     if (!$ok){
         $cmd = '';
         if ($is_windows){
-            //$windows_runas_admin = 'windows_runas_admin /noprofile /user:Administrator ';
-            $windows_runas_admin = '';
-            $cmd = $windows_runas_admin.'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
+            $cmd = 'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
         } else {
             $cmd = 'ln '.escapeshellarg($target).' '.escapeshellarg($link);
         }
@@ -966,13 +928,6 @@ function download(){
         } else alert(et('ReadDenied').": ".$file);
     } else alert(et('FileNotFound').": ".$file);
 }
-// Returns the full path of the current PHP executable
-function linux_get_proc_name(){
-    $output = '';
-    $ok = system_exec_cmd("readlink -f /proc/".posix_getpid()."/exe",$output);
-    if (!$ok) return false;
-    return $output;
-}
 function system_exec_file(){
     global $fm_current_dir,$filename,$debug_mode,$is_windows;
     fb_log('system_exec_file',$filename);
@@ -1072,32 +1027,6 @@ function fix_cookie_name($str){
     $str = trim($str,'_');
     return $str;
 }
-// http://www.ietf.org/rfc/rfc1738.txt
-// The characters ";", "/", "?", ":", "@", "=" and "&" are the characters which may be reserved for special meaning within a scheme. No other characters may be reserved within a scheme.
-// Thus, only alphanumerics, the special characters "$-_.+!*'(),", and reserved characters used for their reserved purposes may be used unencoded within a URL.
-function fix_url($str) {
-    // Remove acentos
-    $str = remove_acentos($str);
-    // Substitui caracteres reservados
-    $str = str_replace(';', '-', $str);
-    $str = str_replace('/', '-', $str);
-    $str = str_replace('?', '-', $str);
-    $str = str_replace(':', '-', $str);
-    $str = str_replace('@', '-', $str);
-    $str = str_replace('=', '-', $str);
-    $str = str_replace('&', '-', $str);
-    // Caracteres adicionais
-    $str = str_replace('(', '-', $str);
-    $str = str_replace(')', '-', $str);
-    $str = str_replace('.', '-', $str);
-    $str = str_replace('_', '-', $str);
-    $str = str_replace(' ', '-', $str);
-    // Apenas caracteres válidos
-    $str = str_strip($str, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890.-");
-    $str = replace_double('-', $str);
-    $str = trim($str,'-');
-    return $str;
-}
 function fix_filename($str,$allowSpaces=false){ // no filesystem não podemos ter acentos
     $str = remove_acentos(trim($str));
     // Substitui caracteres reservados
@@ -1123,33 +1052,6 @@ function fix_filename($str,$allowSpaces=false){ // no filesystem não podemos te
     $str = replace_double('_', $str);
     $str = trim($str,'_');
     return $str;
-}
-function fix_filename_download($str){ // no download podemos ter acentos
-    $str = trim($str);
-    // Substitui caracteres reservados
-    $str = str_replace('\\', ' ', $str);
-    $str = str_replace('/', ' ', $str);
-    $str = str_replace(':', ' ', $str);
-    $str = str_replace('*', ' ', $str);
-    $str = str_replace('?', ' ', $str);
-    $str = str_replace('"', ' ', $str);
-    $str = str_replace('<', ' ', $str);
-    $str = str_replace('>', ' ', $str);
-    $str = str_replace('|', ' ', $str);
-    // Apenas caracteres válidos
-    $str = str_strip($str,"ÁÀÃÂÉÊÈËÍÓÔÕÒÚÜÇÑáàãâéêèëíóõôòúüçñABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-0123456789.()[] ");
-    $str = replace_double(' ', $str);
-    $str = trim($str);
-    return $str;
-}
-function add_http($str){
-    if (mb_strlen($str) > 0 && mb_strpos($str, 'http://') === false && mb_strpos($str, 'https://') === false) return 'http://'.$str;
-    else return $str;
-}
-function remove_sinais($str){
-    $sinais = "./\\-,:;'`~?!\"<>{}[]@#\$%^&*()_+=|";
-    $str = str_replace(str_split($sinais),"",$str);
-    return replace_double(" ",$str);
 }
 function remove_acentos($string) {
     if ( !preg_match('/[\x80-\xff]/', $string) ) return $string;
@@ -1252,26 +1154,6 @@ function remove_acentos($string) {
     $string = strtr($string, $chars);
     return $string;
 }
-function retifica_aspas($str){
-    //return $str;
-    $quotes = array(
-        "\xC2\xAB"     => '"', // « (U+00AB) in UTF-8
-        "\xC2\xBB"     => '"', // » (U+00BB) in UTF-8
-        "\xE2\x80\x98" => "'", // ‘ (U+2018) in UTF-8
-        "\xE2\x80\x99" => "'", // ’ (U+2019) in UTF-8
-        "\xE2\x80\x9A" => "'", // ‚ (U+201A) in UTF-8
-        "\xE2\x80\x9B" => "'", // ‛ (U+201B) in UTF-8
-        "\xE2\x80\x9C" => '"', // “ (U+201C) in UTF-8
-        "\xE2\x80\x9D" => '"', // ” (U+201D) in UTF-8
-        "\xE2\x80\x9E" => '"', // „ (U+201E) in UTF-8
-        "\xE2\x80\x9F" => '"', // ‟ (U+201F) in UTF-8
-        "\xE2\x80\xB9" => "'", // ‹ (U+2039) in UTF-8
-        "\xE2\x80\xBA" => "'", // › (U+203A) in UTF-8
-    );
-    return strtr($str, $quotes);
-    // replace Microsoft Word version of single  and double quotations marks (“ ” ‘ ’) with  regular quotes (' and ")
-    //return iconv('UTF-8', 'ASCII//TRANSLIT', $str);
-}
 function html_encode($str){
     global $charset;
     $str = preg_replace(array('/&/', '/</', '/>/', '/"/'), array('&amp;', '&lt;', '&gt;', '&quot;'), $str);  // Bypass PHP to allow any charset!!
@@ -1281,22 +1163,6 @@ function html_encode($str){
         $str = htmlentities($str, ENT_QUOTES, $charset);
     }
     return $str;
-}
-function rep($x,$y){
-    if ($x) {
-        $aux = "";
-        for ($a=1;$a<=$x;$a++) $aux .= $y;
-        return $aux;
-    } else return "";
-}
-function str_zero($arg1,$arg2){
-    if (strstr($arg1,"-") == false){
-        $aux = intval($arg2) - strlen($arg1);
-        if ($aux) return rep($aux,"0").$arg1;
-        else return $arg1;
-    } else {
-        return "[$arg1]";
-    }
 }
 function replace_double($sub,$str){
     $out=str_replace($sub.$sub,$sub,$str);
@@ -1375,21 +1241,6 @@ function lowercase($str){
     global $charset;
     return mb_strtolower($str, $charset);
 }
-function word_count($theString) {
-    $theString = html_entity_decode(strip_tags($theString));
-    $char_count = mb_strlen($theString);
-    $fullStr = $theString . " ";
-    $initial_whitespace_rExp = "/^\s+/";
-    $left_trimmedStr = preg_replace($initial_whitespace_rExp, "", $fullStr);
-    $non_alphanumerics_rExp = "/[^a-zA-Z0-9]/";
-    $cleanedStr = preg_replace($non_alphanumerics_rExp, " ", $left_trimmedStr);
-    $splitString = explode(" ", trim($cleanedStr));
-    $word_count = count($splitString);
-    if ($char_count < 2) {
-        $word_count = 0;
-    }
-    return $word_count;
-}
 function str_strip($str,$valid_chars){
     $out = "";
     for ($i=0;$i<mb_strlen($str);$i++){
@@ -1399,17 +1250,6 @@ function str_strip($str,$valid_chars){
         }
     }
     return $out;
-}
-function mb_str_ireplace($co, $naCo, $wCzym) {
-    $wCzymM = mb_strtolower($wCzym);
-    $coM    = mb_strtolower($co);
-    $offset = 0;
-    while(!is_bool($poz = mb_strpos($wCzymM, $coM, $offset))) {
-        $offset = $poz + mb_strlen($naCo);
-        $wCzym = mb_substr($wCzym, 0, $poz). $naCo .mb_substr($wCzym, $poz+mb_strlen($co));
-        $wCzymM = mb_strtolower($wCzym);
-    }
-    return $wCzym;
 }
 // +--------------------------------------------------
 // | Interface
@@ -2174,13 +2014,6 @@ function is_binary($file){
     $mime = mime_content_type($file);
     fb_log($file,$mime);
     if (strpos($mime,'text') === false && strpos($mime,'x-empty') === false) return true;
-    return false;
-}
-function is_textfile($file){
-    if (!is_file($file)) return false;
-    $mime = mime_content_type($file);
-    fb_log($file,$mime);
-    if (strpos($mime,'text') === 0 || strpos($mime,'x-empty') !== false) return true;
     return false;
 }
 function dir_list_form() {
@@ -3064,7 +2897,6 @@ function dir_list_form() {
                     if ( is_executable($fm_current_dir.$file) || (strlen($dir_entry['ext']) && (strpos(".exe#.com#.bat#.sh#.py#.pl", $dir_entry['ext']."#" ) !== false)) ) $file_out[$file_count][] = "
                                 <td align=center class=\"sm\"><a onmousedown=\"if(event)event.stopPropagation();\" href=\"javascript:execute_entry('".addslashes($file)."')\">".et('Exec')."</a></td>";
                     else $file_out[$file_count][] = "<td class=\"sm\">&nbsp;</td>";
-                    //$file_out[$file_count][] = "<td class=\"sm\">".(is_readable_phpfm($fm_current_dir.$file)?'<font color=green>R</font>':'<font color=red>R</font>').(is_writable_phpfm($fm_current_dir.$file)?'<font color=green>W</font>':'<font color=red>W</font>').(is_executable_phpfm($fm_current_dir.$file)?'<font color=green>X</font>':'<font color=red>X</font>')."</td>";
                     if (count($file_out[$file_count])>$max_cells){
                         $max_cells = count($file_out[$file_count]);
                     }
@@ -4679,9 +4511,6 @@ function get_raw_post_data() {
         return file_get_contents('php://input');
     }
 }
-function has_field($object, $field) {
-    return array_key_exists($field, get_object_vars($object));
-}
 function get_field($object, $field, $default) {
     $array = get_object_vars($object);
     if (isset($array[$field])) {
@@ -4711,30 +4540,6 @@ function currentURL() {
         $pageURL .= $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
     }
     return $pageURL;
-}
-function service_description($object) {
-    $class_name = get_class($object);
-    $methods = get_class_methods($class_name);
-    $service = array("sdversion" => "1.0",
-                     "name" => "ShellService",
-                     "address" => currentURL(),
-                     "id" => "urn:md5:" . md5(currentURL()));
-    $static = get_class_vars($class_name);
-    foreach ($methods as $method_name) {
-        $proc = array("name" => $method_name);
-        $method = new ReflectionMethod($class_name, $method_name);
-        $params = array();
-        foreach ($method->getParameters() as $param) {
-            $params[] = $param->name;
-        }
-        $proc['params'] = $params;
-        $help_str_name = $method_name . "_documentation";
-        if (array_key_exists($help_str_name, $static)) {
-            $proc['help'] = $static[$help_str_name];
-        }
-        $service['procs'][] = $proc;
-    }
-    return $service;
 }
 function get_json_request() {
     $request = get_raw_post_data();
@@ -4798,21 +4603,6 @@ function cmd_popen_exec($cmd, &$output){
         pclose($handle);
         return true;
     }
-    return false;
-}
-if($is_windows && !function_exists('pcntl_exec') && class_exists('COM')){
-    function pcntl_exec($path, $args=array()){
-        if(is_string($args)) $args = array($args);
-        if(count($args)) $path = '"'.$path.'"';
-        $shell = new COM('WScript.Shell');
-        if ($shell->run($path.(count($args) ? ' '.implode(' ',$args) : ''),0,true)) return NULL;
-        else return false;
-    }
-}
-function cmd_pcntl_exec($cmd, $args=array()){ // Does not provide output, could throw it to a file!
-    if(is_string($args)) $args = array($args);
-    $envs = array();
-    if (pcntl_exec($cmd, $args, $envs) === NULL) return true;
     return false;
 }
 function system_exec_cmd($cmd, &$output){
