@@ -1,14 +1,14 @@
 <?php
-//{"lang":"","fm_root":"","timezone":"","date_format":"Y\/m\/d H:i","auth_pass":"d41d8cd98f00b204e9800998ecf8427e","error_reporting":1}
+//{"lang":"","fm_root":"","timezone":"","date_format":"Y\/m\/d H:i","auth_pass":"","error_reporting":1}
 /*-------------------------------------------------
 | PHP FILE MANAGER
 +--------------------------------------------------
-| phpFileManager 1.7.9
+| phpFileManager 1.8.0
 | By Fabricio Seger Kolling
-| Copyright (c) 2004-2021 Fabrício Seger Kolling
+| Copyright (c) 2004-2025 Fabrício Seger Kolling
 | E-mail: dulldusk@gmail.com
 | URL: http://phpfm.sf.net
-| Last Changed: 2021-09-18
+| Last Changed: 2025-01-13
 +--------------------------------------------------
 | It is the AUTHOR'S REQUEST that you keep intact the above header information
 | and notify it only if you conceive any BUGFIXES or IMPROVEMENTS to this program.
@@ -35,7 +35,7 @@
 // +--------------------------------------------------
 // | Config
 // +--------------------------------------------------
-$version = '1.7.9';
+$version = '1.8.0';
 $charset = 'UTF-8';
 $debug_mode = false;
 $max_php_recursion = 200;
@@ -120,7 +120,7 @@ if(!function_exists('apache_request_headers')){ // Function for Ngnix and other 
     function apache_request_headers(){
         $arh = array();
         $rx_http = '/\AHTTP_/';
-        foreach($SERVER as $key => $val) {
+        foreach($_SERVER as $key => $val) {
             if( preg_match($rx_http, $key) ) {
                 $arh_key = preg_replace($rx_http, '', $key);
                 $rx_matches = array();
@@ -305,7 +305,7 @@ class config {
             'fm_root'=>'',
             'timezone'=>'',
             'date_format'=>'Y/m/d H:i',
-            'auth_pass'=>md5(''),
+            'auth_pass'=>'',
             'error_reporting'=>1
         );
     }
@@ -634,7 +634,7 @@ if ($action != '99') {
     header("Pragma: no-cache");
     header("Content-Type: text/html; charset=".$charset);
 }
-if ($auth_pass == md5('') || $loggedon==$auth_pass){
+if ($auth_pass == '' || $loggedon==$auth_pass){
     switch ($frame){
         case 1: break; // Empty Frame
         case 2: frame2(); break;
@@ -681,9 +681,10 @@ function symlink_phpfm($target,$link){
     if (!$ok){
         $cmd = '';
         if ($is_windows){
-            //$runas = 'runas /noprofile /user:Administrator ';
-            if (is_dir($target)) $cmd = $runas.'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
-            else $cmd = $runas.'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
+            //$windows_runas_admin = 'windows_runas_admin /noprofile /user:Administrator ';
+            $windows_runas_admin = '';
+            if (is_dir($target)) $cmd = $windows_runas_admin.'mklink /D '.escapeshellarg($link).' '.escapeshellarg($target);
+            else $cmd = $windows_runas_admin.'mklink '.escapeshellarg($link).' '.escapeshellarg($target);
         } else {
             $cmd = 'ln -s '.escapeshellarg($target).' '.escapeshellarg($link);
         }
@@ -721,8 +722,9 @@ function link_phpfm($target,$link){
     if (!$ok){
         $cmd = '';
         if ($is_windows){
-            //$runas = 'runas /noprofile /user:Administrator ';
-            $cmd = $runas.'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
+            //$windows_runas_admin = 'windows_runas_admin /noprofile /user:Administrator ';
+            $windows_runas_admin = '';
+            $cmd = $windows_runas_admin.'mklink /H '.escapeshellarg($link).' '.escapeshellarg($target);
         } else {
             $cmd = 'ln '.escapeshellarg($target).' '.escapeshellarg($link);
         }
@@ -753,6 +755,7 @@ function phpfm_get_total_size($path){
 }
 function dir_list_update_total_size(){
     global $fm_current_dir, $dirname;
+    @ini_set("max_execution_time",30);
     $path = rtrim($fm_current_dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$dirname;
     $total_size = system_get_total_size($path);
     if ($total_size === false) {
@@ -821,6 +824,7 @@ function php_get_total_size_execute($path) {
     global $debug_mode,$max_php_recursion,$max_php_recursion_counter;
     fb_log('php_get_total_size_execute',$path);
     if ($debug_mode) return 0;
+    @ini_set("max_execution_time",30);
     $total_size = 0;
     if (is_dir($path)) {
         $entry_list = scandir(fs_encode($path));
@@ -936,14 +940,14 @@ function total_move($orig,$dest) {
     return rename((string)$orig,(string)$dest);
 }
 function download(){
-    global $fm_current_dir,$filename,$debug_mode;
+    global $fm_current_dir,$filename,$debug_mode,$download_ext_filter;
     $file = $fm_current_dir.$filename;
     fb_log('download',$file);
     if ($debug_mode) return;
     if(file_exists($file)){
         $is_denied = false;
         foreach($download_ext_filter as $key=>$ext){
-            if (eregi($ext,$filename)){
+            if (preg_match("/$ext/i", $filename)){
                 $is_denied = true;
                 break;
             }
@@ -1008,7 +1012,7 @@ function save_upload($temp_file,$filename,$dir_dest) {
     $is_denied = false;
     $output = '';
     foreach($upload_ext_filter as $key=>$ext){
-        if (eregi($ext,$filename)){
+        if (preg_match("/$ext/i", $filename)){
             $is_denied = true;
             break;
         }
@@ -1312,6 +1316,7 @@ function remove_special_chars($str){
 function array_csort() {
     $args = func_get_args();
     $marray = array_shift($args);
+    $i=0;
     $msortline = "return(array_multisort(";
     foreach ($args as $arg) {
         $i++;
@@ -1371,19 +1376,18 @@ function lowercase($str){
     return mb_strtolower($str, $charset);
 }
 function word_count($theString) {
-    $theString = html_decode(strip_tags($theString));
+    $theString = html_entity_decode(strip_tags($theString));
     $char_count = mb_strlen($theString);
-    $fullStr = $theString." ";
-    $initial_whitespace_rExp = "^[[:alnum:]]$";
-
-    $left_trimmedStr = ereg_replace($initial_whitespace_rExp,"",$fullStr);
-    $non_alphanumerics_rExp = "^[[:alnum:]]$";
-    $cleanedStr = ereg_replace($non_alphanumerics_rExp," ",$left_trimmedStr);
-    $splitString = explode(" ",$cleanedStr);
-
-    $word_count = count($splitString)-1;
-    if(mb_strlen($fullStr)<2)$word_count=0;
-
+    $fullStr = $theString . " ";
+    $initial_whitespace_rExp = "/^\s+/";
+    $left_trimmedStr = preg_replace($initial_whitespace_rExp, "", $fullStr);
+    $non_alphanumerics_rExp = "/[^a-zA-Z0-9]/";
+    $cleanedStr = preg_replace($non_alphanumerics_rExp, " ", $left_trimmedStr);
+    $splitString = explode(" ", trim($cleanedStr));
+    $word_count = count($splitString);
+    if ($char_count < 2) {
+        $word_count = 0;
+    }
     return $word_count;
 }
 function str_strip($str,$valid_chars){
@@ -1876,6 +1880,7 @@ class tree_fs {
         return $id;
     }
     public function lst($id, $with_root=false) {
+        @ini_set("max_execution_time",30);
         $path = $this->path($id);
         $lst = scandir(fs_encode($path));
         if(!$lst) { fb_log('Could not list path: '.$path); }
@@ -2012,7 +2017,7 @@ function frame2(){
         }
         if (count($fm_root_opts)>1) echo "<select name=drive onchange=\"set_fm_current_root(this.value)\" style=\"float:left; margin:1px 0 5px 0; margin-right:5px; padding:5px;\">".implode("\n",$fm_root_opts)."</select>";
         echo "<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn\" onclick=\"refresh_tree()\" value=\"".et('Refresh')."\"><i class=\"fa fa-refresh\"></i> ".et('Refresh')."</button>";
-        if ($auth_pass != md5('')) echo "&nbsp;<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
+        if ($auth_pass != '') echo "&nbsp;<button type=\"button\" style=\"margin-bottom: 5px;\" class=\"btn \" onclick=\"logout()\" value=\"".et('Leave')."\"><i class=\"fa fa-file-go\"></i> ".et('Leave')."</button>";
     echo "</form>";
     echo "</td></tr>";
     echo "<tr valign=top><td>";
@@ -2179,7 +2184,7 @@ function is_textfile($file){
     return false;
 }
 function dir_list_form() {
-    global $script_init_time,$fm_current_root,$fm_current_dir,$quota_mb,$resolve_ids,$order_dir_list_by,$is_windows,$cmd_name,$ip,$lan_ip,$fm_path_info,$version,$date_format;
+    global $script_init_time,$fm_current_root,$fm_current_dir,$quota_mb,$resolve_ids,$order_dir_list_by,$is_windows,$cmd_name,$ip,$lan_ip,$fm_path_info,$version,$date_format,$dir_before;
     clearstatcache();
     $out = "<style>
         #modalIframeWrapper {
@@ -2917,6 +2922,7 @@ function dir_list_form() {
         <input type=hidden name=\"selected_dir_list\" value=\"\">
         <input type=hidden name=\"selected_file_list\" value=\"\">";
     function get_breadcrumbs($path){
+        global $fm_path_info;
         $entry_list = explode(DIRECTORY_SEPARATOR, rtrim($path,DIRECTORY_SEPARATOR));
         $uplink = '';
         if (count($entry_list) == 1){
@@ -2934,6 +2940,7 @@ function dir_list_form() {
         return $uplink.$breadcrumbs;
     }
     function get_link_breadcrumbs($path){
+        global $fm_path_info;
         $out = '';
         if (is_link(rtrim($path,DIRECTORY_SEPARATOR))){
             $target = readlink(rtrim($path,DIRECTORY_SEPARATOR));
@@ -3680,13 +3687,13 @@ function get_file_icon_class($path){
     return $img;
 }
 function view_form(){
-    global $doc_root,$fm_path_info,$url_info,$fm_current_dir,$is_windows,$filename,$passthru;
+    global $doc_root,$fm_path_info,$url_info,$fm_current_dir,$is_windows,$filename,$passthru,$download_ext_filter;
     if (intval($passthru)){
         $file = $fm_current_dir.$filename;
         if(file_exists($file)){
             $is_denied = false;
             foreach($download_ext_filter as $key=>$ext){
-                if (eregi($ext,$filename)){
+                if (preg_match("/$ext/i", $filename)){
                     $is_denied = true;
                     break;
                 }
@@ -4025,7 +4032,7 @@ function config_form(){
                 $error_reporting = $newerror;
             }
             if ($cfg->data['auth_pass'] != $newpass){
-                $cfg->data['auth_pass'] = md5($newpass);
+                $cfg->data['auth_pass'] = (function_exists('password_hash') ? password_hash($newpass, PASSWORD_BCRYPT) : md5($newpass));
                 setcookie("loggedon", $cfg->data['auth_pass'], 0 , "/");
             }
             $cfg->save();
@@ -4145,7 +4152,7 @@ function config_form(){
         <tr><td align=right>".et('Lang').":<td>
             <select name=newlang id=newlang style=\"width:410px; padding:5px;\">
                 <option value=''>System Default</option>
-				<option value='sq'>Albanian - by Vilson Bujaj</option>
+                <option value='sq'>Albanian - by Vilson Bujaj</option>
                 <option value='ca'>Catalan - by Pere Borràs AKA @Norl</option>
                 <option value='cn'>Chinese - by Wen.Xin</option>
                 <option value='nl'>Dutch - by Leon Buijs</option>
@@ -4173,12 +4180,9 @@ function config_form(){
                 <option value=\"1\">Show PHP Errors
                 <option value=\"2\">Show PHP Errors + ChromePhp Debug
             </select>
-        </td></tr>";
-        $show_pass = '';
-        if ($cfg->data['auth_pass'] != md5('')) $show_pass = $cfg->data['auth_pass'];
-        echo "
+        </td></tr>
         <tr><td align=right>".et('Pass').":<td>
-            <input type=\"password\" style=\"width:392px; padding:5px 8px;\" name=\"newpass\" id=\"newpass\" readonly autocomplete=\"off\" value=\"".html_encode($show_pass)."\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
+            <input type=\"password\" style=\"width:392px; padding:5px 8px;\" name=\"newpass\" id=\"newpass\" readonly autocomplete=\"off\" onkeypress=\"enterSubmit(event,'test_config_form(1)')\">
         </td></tr>
         <tr><td>&nbsp;<td align=right><input type=button class=\"btn noIcon\" value=\"".et('SaveConfig')."\" onclick=\"test_config_form(1)\"></td></tr>
         </form>
@@ -4295,7 +4299,7 @@ function portscan_form(){
     global $cfg;
     global $fm_current_dir,$fm_file,$doc_root,$fm_path_info,$fm_current_root;
     global $ip,$lan_ip;
-    global $portscan_action,$portscan_ip,$portscan_ips,$portscan_port,$portscan_ports,$services,$portscan_ignore_ping;
+    global $portscan_action,$portscan_ip,$portscan_ips,$portscan_port,$portscan_ports,$services,$portscan_ignore_ping,$portscan_ip_range,$portscan_port_range;
     $services_inverted = array_flip($services);
     $default_portscan_services = explode(",","DAYTIME,FTP,SSH,TELNET,DNS,DHCP,NETBIOS-SESSION,SNMP,LDAP,SMB-AD,MSSQL,ORACLE,MYSQL/MARIADB,RDESKTOP,VNC,HTTPD-ALT");
     $default_portscan_ports = array();
@@ -4972,6 +4976,7 @@ function response($result, $id, $error) {
 }
 function shell_form(){
     global $fm_current_dir,$shell_form,$cmd_arg,$fm_path_info,$is_windows;
+    $prompt_end = '';
     switch ($shell_form){
         case 1:
             handle_json_rpc();
@@ -5187,7 +5192,7 @@ function logout(){
 }
 function login(){
     global $pass,$auth_pass,$fm_path_info;
-    if (md5(trim($pass)) == $auth_pass){
+    if ((function_exists('password_verify') && password_verify(trim($pass), $auth_pass)) || md5(trim($pass)) == $auth_pass){
         setcookie("loggedon",$auth_pass,0,"/");
         header ("Location: ".$fm_path_info['basename']);
         return true;
@@ -5199,7 +5204,7 @@ function login_form(){
     html_header();
     echo "
     <body>";
-    if ($noscript && ($auth_pass == md5('') || $loggedon==$auth_pass)) {
+    if ($noscript && ($auth_pass == '' || $loggedon==$auth_pass)) {
         echo "
         <table border=0 cellspacing=0 cellpadding=5>
             <tr><td><font size=4>".et('FileMan')."</font></td></tr>
@@ -5242,7 +5247,7 @@ function login_form(){
     </html>";
 }
 function frame3(){
-    global $is_windows,$cmd_arg,$chmod_arg,$zip_dir,$fm_current_root,$cookie_cache_time;
+    global $is_windows,$cmd_arg,$chmod_arg,$zip_dir,$fm_current_root,$cookie_cache_time,$fm_path_info;
     global $dir_dest,$fm_current_dir,$dir_before;
     global $selected_file_list,$selected_dir_list,$old_name,$new_name;
     global $action,$or_by,$order_dir_list_by;
@@ -6416,7 +6421,7 @@ function et($tag){
     $et['en']['FileSaved'] = 'File saved';
     $et['en']['FileSaveError'] = 'Error saving file';
 
-	// Shqip (Albanian) - by Vilson Bujaj
+    // Shqip (Albanian) - by Vilson Bujaj
     $et['sq']['Version'] = 'Versioni';
     $et['sq']['DocRoot'] = 'Document Root';
     $et['sq']['FMRoot'] = 'File Manager Root';
@@ -8470,7 +8475,6 @@ function et($tag){
     $et['id']['About'] = 'Tentang';
     $et['id']['FileSaved'] = 'File disimpan ';
     $et['id']['FileSaveError'] = 'gagal menyimpan file ';
-
 
     // Urdu - by MEGAMINDMK
     $et['ur']['Version'] = 'ورژن';
