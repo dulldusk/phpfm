@@ -2168,11 +2168,15 @@ function frame2(){
     echo "</body>\n</html>";
 }
 function is_binary($file){
-    if (!is_file($file)) return false;
-    // If mbstring is supported, we check if the file has encoding (meaning it's text)
+    if (!is_file($file) || !is_readable($filePath)) return false;
+    // If mbstring is supported, we check if the first chunk of the file has encoding (meaning it's text)
     if (function_exists('mb_detect_encoding')) {
+        $handle = fopen($file, "rb");
+        if (!$handle) return false;
+        $chunk = fread($handle, 512);
+        fclose($handle);
         $content = file_get_contents($file);
-        return mb_detect_encoding($content, null, true) === false;
+        return mb_detect_encoding((string) $chunk, null, true) === false;
     } else {
     // Fallback on legacy check
         $mime = mime_content_type($file);
