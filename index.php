@@ -2168,13 +2168,18 @@ function frame2(){
     echo "</body>\n</html>";
 }
 function is_binary($file){
-    //https://stackoverflow.com/questions/1765311/how-to-view-files-in-binary-from-bash
-    //http://php.net/manual/pt_BR/function.bin2hex.php
     if (!is_file($file)) return false;
-    $mime = mime_content_type($file);
-    fb_log($file,$mime);
-    if (strpos($mime,'text') === false && strpos($mime,'x-empty') === false) return true;
-    return false;
+    // If mbstring is supported, we check if the file has encoding (meaning it's text)
+    if (function_exists('mb_detect_encoding')) {
+        $content = file_get_contents($file);
+        return mb_detect_encoding($content, null, true) === false;
+    } else {
+    // Fallback on legacy check
+        $mime = mime_content_type($file);
+        fb_log($file,$mime);
+        if (strpos($mime,'text') === false && strpos($mime,'x-empty') === false) return true;
+        return false;
+    }
 }
 function is_textfile($file){
     if (!is_file($file)) return false;
