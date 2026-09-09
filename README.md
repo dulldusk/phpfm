@@ -5,7 +5,7 @@ phpFileManager is a complete filesystem management tool on a single file. A serv
 Shake Robber - An Android App to get a photo of the robber who stole your phone, saves on your google drive and send an alert by email.
 https://www.dulldusk.com/shake-robber/
 
-## Current Features - Version 1.8.0:
+## Current Features - Version 1.8.1:
 - directory tree with ajax loading
 - create/rename/delete/chmod/copy/move/edit/view/execute files and folders
 - symlink and hardlink support
