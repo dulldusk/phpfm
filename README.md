@@ -1,15 +1,9 @@
 # PHP Filesystem Management Tool
 phpFileManager is a complete filesystem management tool on a single file. A server administration tool using PHP, meant for rapid file access, and also to verify the server configuration and security. The script can be renamed and deployed on an unique known url, and offers password protection.. All dependencies, like images, js and css files, are included inside the same file, so that the script can run even on offline devices, like a local Raspberry Pi, or ESP32 microcontroller. The size of the script is bellow 1Mb, and i want to make it even smaller. To conclude, this script is also a repository of several hand made functions, organized in sections, meant for learning PHP and explore all PHP capabilities. You can learn, copy and use them on your own projects.
 
-## Help the project with a donation:
-I want to add a new feature, to allow the view of two phpFileManager from diferent URLs on the same screen. Like MC (Midnight Commander) does. This will allow to transfer files and folders using drag n drop, between any instalation.
-
-https://www.dulldusk.com/product/donation-for-phpfilemanager/
-
-## New Features:
-I have a ton of ideas, see on the link bellow.
-
-https://www.dulldusk.com/phpfm/new-features/
+## Check out my new project! 
+Shake Robber - An Android App to get a photo of the robber who stole your phone, saves on your google drive and send an alert by email.
+https://www.dulldusk.com/shake-robber/
 
 ## Current Features - Version 1.8.0:
 - directory tree with ajax loading
